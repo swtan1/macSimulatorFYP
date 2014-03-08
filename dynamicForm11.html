@@ -1,0 +1,3688 @@
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="http://flip.hr/css/bootstrap.min.css">
+	<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+	<script src="http://code.jquery.com/ui/1.10.1/jquery-ui.js"></script>
+	<script type='text/javascript' src='http://code.jquery.com/jquery-1.6.2.js'></script>
+	
+	<style>
+		.form-inline{
+			padding: 5px 10px;
+			border: 1px solid #000;
+		}
+		.span11{
+			padding: 5px 10px 10px;
+			border: 2px solid #CC0033;
+			position: relative;
+			left: 10%;
+		}
+		#extension{
+			padding: 0px 24px;
+			vertical-align: middle;
+		}
+		#wrapper {
+			position:relative;
+			width:300px;
+			height:150px;
+		}
+		canvas{
+			border:1px solid black;
+		}
+		#tip {
+			background-color:white;
+			border:1px solid blue;
+			position:absolute;
+			left:-400px;
+			top:100px;
+		}
+		table,td,th
+		{
+			border:1px solid black;
+		}
+		th
+		{
+			height:50px;
+			width:85px;
+		}
+		td
+		{
+			padding-top:3px;
+			padding-left:5px;
+		}
+		.green 
+		{
+			color: #33FF00;
+		}
+		.red 
+		{
+			color: red;
+		}
+	</style>
+
+	<script type='text/javascript'>
+		var inputArray = [];
+		var numberSenders;
+		var numberReceivers;
+		var message;
+		var protocolType;
+		var canvas1;
+		var context1;
+		var timeCount = -1;
+		var canEnd = 0;
+		var mediumBusy = false;
+		var collisionRemove = 0;
+		var smallestX = 0;
+		var biggestX = 0;
+		var smallestY = 0;
+		var biggestY = 0;
+		var scale = 0;
+		var scaleCounter = 0;
+		var biggestRadius = 0;
+		var tipCanvas;
+		var tipCtx;
+		var canvasOffset;
+		var offsetX;
+		var offsetY;
+
+		var graph;
+		var xPadding = 30;
+		var yPadding = 30;
+		
+		var receiversArray = new Array();
+		var sendersArray = new Array();
+		var hiddenArray = new Array();
+		var allowedSenders = new Array();
+		var allowedReceivers = new Array();
+		var allPacketsArrival = new Array();
+		var allPacketsSize = new Array();
+		
+		var imgArray = new Array();
+
+		imgArray[0] = new Image();
+		imgArray[0].src = 'difs2.jpg';
+		
+		imgArray[1] = new Image();
+		imgArray[1].src = 'busyMedium1.jpg';
+		
+		imgArray[3] = new Image();
+		imgArray[3].src = 'data.jpg';
+		
+		imgArray[4] = new Image();
+		imgArray[4].src = 'sifs.jpg';
+		
+		imgArray[5] = new Image();
+		imgArray[5].src = 'ack.jpg';	
+		
+		imgArray[9] = new Image();
+		imgArray[9].src = 'rts.jpg';
+
+		imgArray[10] = new Image();
+		imgArray[10].src = 'cts.jpg';	
+		
+		imgArray[11] = new Image();
+		imgArray[11].src = 'navRts.jpg';
+		
+		imgArray[12] = new Image();
+		imgArray[12].src = 'navCts.jpg';
+	
+		//802.11 (FHSS) parameters - DIFS, SIFS, tSlot, CWMin, CWMax
+		var fhss = new Array();
+		fhss[0] = 128;	//DIFS
+		fhss[2] = 50;
+		fhss[4] = 35;	//SIFS
+		fhss[6] = 15;	//CWMin
+		fhss[7] = 1023;	//CWMax
+		fhss[1] = 2;
+
+		//802.11 (DSSS) parameters - DIFS, SIFS, tSlot, CWMin, CWMax
+		var dsss = new Array();
+		dsss[0] = 50;	//DIFS		
+		dsss[4] = 17;	//SIFS
+		dsss[2] = 20;
+		dsss[6] = 31;	//CWMin
+		dsss[7] = 1023;	//CWMax
+		dsss[1] = 2;
+
+		//802.11 (IR) parameters - DIFS, SIFS, tSlot, CWMin, CWMax
+		var ir = new Array();
+		ir[0] = 26;	//DIFS		
+		ir[4] = 17;	//SIFS
+		ir[2] = 10;	
+		ir[6] = 63;	//CWMin
+		ir[7] = 1023;	//CWMax
+		ir[1] = 2;
+
+		//802.11b parameters - DIFS, SIFS, tSlot, CWMin, CWMax
+		var bMac = new Array();
+		bMac[0] = 50;	//DIFS
+		bMac[4] = 17;	//SIFS
+		bMac[2] = 20;	
+		bMac[6] = 31;	//CWMin
+		bMac[7] = 1023;	//CWMax
+		bMac[1] = 4;
+
+		//802.11 (IR) parameters - DIFS, SIFS, tSlot, CWMin, CWMax
+		var aMac = new Array();
+		aMac[0] = 34;	//DIFS
+		aMac[4] = 23;	//SIFS
+		aMac[2] = 10;
+		aMac[6] = 15;	//CWMin
+		aMac[7] = 1023;	//CWMax
+		aMac[1] = 6;
+		
+		var randomBOarray = new Array();
+		randomBOarray[0] = new Image();
+		randomBOarray[0].src = 'randomBO10.jpg';
+		randomBOarray[1] = new Image();
+		randomBOarray[1].src = 'randomBO20.jpg';
+		randomBOarray[2] = new Image();
+		randomBOarray[2].src = 'randomBO50.jpg';//tSlot
+		
+		var collisionArray = new Array();
+		var collidedSenders = new Array();
+		var dots = new Array();
+		var tempReceivers = new Array();
+		var tempNumbers = new Array();
+			
+		var tt;
+		var canvas_y = 60;
+		
+		function getContent1(testCase, testCase1)
+		{
+			document.getElementById("submitUser").disabled = true;
+			if (testCase == "2a")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =450 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				var text = "S1" ;
+				var text1 = "R1";
+				var sComponents = [text, text1, 510, 130, 100, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				allowedSenders.push(sComponents);
+				sendersArray.push(sComponents);
+				var rComponents = [text1, 400, 190, 180];
+				allowedReceivers.push(rComponents);
+				receiversArray.push(rComponents);
+				biggestX = 610;
+				smallestX = 220;
+				biggestY = 370;
+				smallestY = 10;
+				drawNodesDiagram();
+				//drawCanvas();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "twoWay", testCase)}, 1);
+			}
+		
+			else if (testCase == "2b")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =1100 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				
+				var text = "S1" ;
+				var text2 = "S2";
+				var text1 = "R1";
+				var sComponents = [text, text1, 300, 240, 100, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				var sComponents1 = [text2, text1, 510, 130, 100, 15, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				allowedSenders.push(sComponents);
+				sendersArray.push(sComponents);
+				allowedSenders.push(sComponents1);
+				sendersArray.push(sComponents1);
+				var rComponents = [text1, 400, 190, 180];
+				allowedReceivers.push(rComponents);
+				receiversArray.push(rComponents);
+				biggestX = 610;
+				smallestX = 200;
+				biggestY = 370;
+				smallestY = 10;
+				drawNodesDiagram();
+				//drawCanvas();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "twoWay", testCase)}, 1);
+			}
+		
+			else if (testCase == "2c")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =1200 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				
+				var text = "S1" ;
+				var text2 = "S2";
+				var text1 = "R1";
+				var sComponents = [text, text1, 300, 240, 100, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				var sComponents1 = [text2, text1, 250, 200, 70, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				allowedSenders.push(sComponents);
+				sendersArray.push(sComponents);
+				allowedSenders.push(sComponents1);
+				sendersArray.push(sComponents1);
+				var rComponents = [text1, 400, 190, 180];
+				allowedReceivers.push(rComponents);
+				receiversArray.push(rComponents);
+				biggestX = 580;
+				smallestX = 180;
+				biggestY = 370;
+				smallestY = 10;
+				drawNodesDiagram();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "twoWay", testCase)}, 1);
+			}
+			
+			else if (testCase == "2d")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =2300 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				
+				var text = "S3" ;
+				var text2 = "S2";
+				var text1 = "R1";
+				var text3 = "S1";
+				var sComponents = [text3, text1, 510, 170, 70, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				var sComponents1 = [text2, text1, 555, 160, 50, 60, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				var sComponents2 = [text, text1, 510, 130, 90, 212, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 0];
+				allowedSenders.push(sComponents);
+				allowedSenders.push(sComponents1);
+				allowedSenders.push(sComponents2);
+				sendersArray.push(sComponents);
+				sendersArray.push(sComponents1);
+				sendersArray.push(sComponents2);
+				var rComponents = [text1, 400, 190, 180];
+				allowedReceivers.push(rComponents);
+				receiversArray.push(rComponents);
+				biggestX = 605;
+				smallestX = 220;
+				biggestY = 370;
+				smallestY = 10;
+				drawNodesDiagram();
+				//drawCanvas();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "twoWay", testCase)}, 1);
+			}			
+		
+			else if (testCase1 == "4a")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =600 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				
+				var text = "S1" ;
+				var text1 = "R1";
+				var sComponents = [text, text1, 510, 130, 100, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1];
+				allowedSenders.push(sComponents);
+				sendersArray.push(sComponents);
+				var rComponents = [text1, 400, 190, 180];
+				allowedReceivers.push(rComponents);
+				receiversArray.push(rComponents);
+				biggestX = 160;
+				smallestX = 60;
+				biggestY = 160;
+				smallestY = 60;
+				drawNodesDiagram();
+				//drawCanvas();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "fourWay", testCase1)}, 1);			
+			}
+		
+			else if (testCase1 == "4b")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =1300 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				
+				var text = "S1" ;
+				var text1 = "R1";
+				var text2 = "S2";
+				var sComponents = [text, text1, 510, 170, 110, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1];
+				var sComponents1 = [text2, text1, 450, 100, 50, 70, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1];
+				allowedSenders.push(sComponents);
+				allowedSenders.push(sComponents1);
+				sendersArray.push(sComponents);
+				sendersArray.push(sComponents1);
+				var rComponents = [text1, 400, 190, 180];
+				allowedReceivers.push(rComponents);
+				receiversArray.push(rComponents);
+				biggestX = 620;
+				smallestX = 220;
+				biggestY = 370;
+				smallestY = 10;
+				drawNodesDiagram();
+				//drawCanvas();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "fourWay", testCase1)}, 1);			
+			}
+
+			else if (testCase1 == "4c")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =2800 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				
+				var text = "S1" ;
+				var text1 = "S2";
+				var text2 = "R1";
+				var text3 = "R2";
+				var text4 = "S3"
+				var sComponents = [text, text2, 490, 170, 80, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1, 1];
+				var sComponents1 = [text1, text3, 640, 160, 90, 70, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1, 1];
+				var sComponents2 = [text4, text3, 530, 100, 50, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1, 1];
+				allowedSenders.push(sComponents);
+				allowedSenders.push(sComponents1);
+				allowedSenders.push(sComponents2);
+				sendersArray.push(sComponents);
+				sendersArray.push(sComponents1);
+				sendersArray.push(sComponents2);
+				var rComponents = [text2, 400, 190, 180, 0, 0, 0, 0, 0];
+				var rComponents1 = [text3, 550, 190, 185, 0, 0, 0, 0, 0];
+				allowedReceivers.push(rComponents);
+				allowedReceivers.push(rComponents1);
+				receiversArray.push(rComponents);
+				receiversArray.push(rComponents1);
+				biggestX = 735;
+				smallestX = 220;
+				biggestY = 375;
+				smallestY = 5;
+				drawNodesDiagram();
+				//drawCanvas();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "fourWay", testCase1)}, 1);			
+			}
+			
+			else if (testCase1 == "4d")
+			{
+				$("#wrapper").append('<canvas id = drawCanvas width =1250 height =1800 style="border:1px solid #000000;"></canvas>');
+				canvas1 = document.getElementById('drawCanvas');
+				context1 = canvas1.getContext('2d');
+				
+				var text = "S1" ;
+				var text1 = "S2";
+				var text2 = "R1";
+				var text3 = "R2";
+				var sComponents = [text, text2, 250, 100, 90, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1, 1];
+				var sComponents1 = [text1, text3, 480, 300, 70, 0, 20, true, 8, 0, false, false, 0, false, false, 0, 0, 0, 0, 0, 0, 0, 1, 1];
+				allowedSenders.push(sComponents);
+				allowedSenders.push(sComponents1);
+				sendersArray.push(sComponents);
+				sendersArray.push(sComponents1);				
+				var rComponents = [text2, 400, 190, 180, 0, 0, 0, 0, 0];
+				var rComponents1 = [text3, 550, 190, 180, 0, 0, 0, 0, 0];
+				allowedReceivers.push(rComponents);
+				allowedReceivers.push(rComponents1);
+				receiversArray.push(rComponents);
+				receiversArray.push(rComponents1);
+				biggestX = 730;
+				smallestX = 160;
+				biggestY = 370;
+				smallestY = 10;
+				drawNodesDiagram();
+				//drawCanvas();
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+				}
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					context1.fillStyle = "black";
+					context1.font="16px Calibri";
+					context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+				}
+				
+				tt = setInterval(function(){drawTimelines(fhss, "fourWay", testCase1)}, 1);			
+			}
+
+			for(var i=0; i<allowedSenders.length; i++)
+			{
+				if (i == 0)
+				{
+					$("#dynamic1").append('<table>');
+					$("#dynamic1").append('<tr>');
+					$("#dynamic1").append('<th></th>');
+					$("#dynamic1").append('<th>Receiver</th>');
+					$("#dynamic1").append('<th>X-Coordinate</th>');
+					$("#dynamic1").append('<th>Y-Coordinate</th>');
+					$("#dynamic1").append('<th>Range</th>');
+					$("#dynamic1").append('<th>Time of <br> Data Arrival</th>');
+					$("#dynamic1").append('<th>Size of <br> Data (in Bytes)</th>');
+					$("#dynamic1").append('</tr>');
+				}
+				$("#dynamic1").append('<tr>');
+				$("#dynamic1").append('<td>'+ allowedSenders[i][0] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedSenders[i][1] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedSenders[i][2] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedSenders[i][3] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedSenders[i][4] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedSenders[i][5] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedSenders[i][6] +'</td>');
+				$("#dynamic1").append('</tr>');
+				if (i == allowedSenders.length - 1)
+				{
+					$("#dynamic1").append('</table>');
+				}
+			}
+			$("#dynamic1").append("<br>");
+			for(var i=0; i<allowedReceivers.length; i++)
+			{
+				if (i == 0)
+				{
+					$("#dynamic1").append('<table>');
+					$("#dynamic1").append('<tr>');
+					$("#dynamic1").append('<th></th>');
+					$("#dynamic1").append('<th>X-Coordinate</th>');
+					$("#dynamic1").append('<th>Y-Coordinate</th>');
+					$("#dynamic1").append('<th>Range</th>');
+					$("#dynamic1").append('</tr>');
+				}
+				$("#dynamic1").append('<tr>');
+				$("#dynamic1").append('<td>'+ allowedReceivers[i][0] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedReceivers[i][1] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedReceivers[i][2] +'</td>');
+				$("#dynamic1").append('<td>'+ allowedReceivers[i][3] +'</td>');
+				$("#dynamic1").append('</tr>');
+				//$("#dynamic").append("<br>");
+				if (i == allowedReceivers.length - 1)
+				{
+					$("#dynamic1").append('</table>');
+				}
+			}
+			
+				$("#wrapper").append('<canvas id="tip" width=200 height=33></canvas>');
+				tipCanvas = document.getElementById("tip");
+				tipCtx = tipCanvas.getContext("2d");
+				canvasOffset = $("#drawCanvas").offset();
+				offsetX = canvasOffset.left;
+				offsetY = canvasOffset.top;
+			
+				canvas1.addEventListener('mousemove', function(evt) {
+					var mousePos = getMousePos(canvas1, evt);
+					var message = 'Relative position: ' + mousePos.x + ',' + mousePos.y;
+					handleMouseMove(mousePos.x, mousePos.y);
+				}, false);
+		  
+				function getMousePos(canvas1, evt) {
+					var rect = canvas1.getBoundingClientRect();
+					return {
+						x: evt.clientX - rect.left,
+						y: evt.clientY - rect.top
+					};
+				}
+				
+			for(var i=1; i<=allowedSenders.length; i++){
+				if (i == 1)
+				{
+					$("#resultTable").append('<br>');
+					$("#resultTable").append('<table>');
+					$("#resultTable").append('<tr>');
+					$("#resultTable").append('<th>Sender</th>');
+					$("#resultTable").append('<th>Receiver</th>');
+					$("#resultTable").append('<th>Allowed to Send</th>');
+					$("#resultTable").append('<th>Possible Problems</th>');
+					$("#resultTable").append('</tr>');
+				}
+				$("#resultTable").append('<tr>');
+				$("#resultTable").append('<td>'+ allowedSenders[i-1][0] +'</td>');
+				if (allowedSenders[i-1][1] == "Select")
+				{
+					$("#resultTable").append('<td><label></label></td>');
+				}
+				else
+				{
+					$("#resultTable").append('<td>'+allowedSenders[i-1][1]+'</td>');
+				}
+				if (allowedSenders[i-1][7] == true)
+				{
+					$("#resultTable").append('<td align=center><img src=ok.jpg></td>');
+				}
+				message = HiddenExposed(allowedSenders[i-1]);
+				$("#resultTable").append('<td><label>'+message+'</label></td>');
+				
+				$("#resultTable").append('</tr>');
+				
+				if (i == allowedSenders.length)
+				{
+					$("#resultTable").append('</table>');
+				}
+			}
+			
+		}
+		
+		
+		function clear_canvas()
+		{
+			location.reload(true);
+		}
+		
+		function displaySender(numSenders, numReceivers){
+			//if (numSenders != "senders" && $("#dynamic").is(':empty') && numReceivers != "receivers" && numReceivers != "")
+			if (numSenders >= 1 && numSenders <= 6 && numReceivers >= 1 && numReceivers <= 6 )
+			{	
+				numberSenders = numSenders;
+				numberReceivers = numReceivers;
+				for(var i=1; i<=numSenders; i++){
+					if (i == 1)
+					{
+						$("#dynamic").append('<table>');
+						$("#dynamic").append('<tr>');
+						$("#dynamic").append('<th></th>');
+						$("#dynamic").append('<th>Receiver</th>');
+						$("#dynamic").append('<th>X-Coordinate</th>');
+						$("#dynamic").append('<th>Y-Coordinate</th>');
+						$("#dynamic").append('<th>Range</th>');
+						$("#dynamic").append('<th>Time of <br> Data Arrival</th>');
+						$("#dynamic").append('<th>Size of <br> Data (in Bytes)</th>');
+						$("#dynamic").append('</tr>');
+					}
+					$("#dynamic").append('<tr>');
+					$("#dynamic").append('<td><label id= S'+i+'>S'+i+'</label></td>');;
+					$("#dynamic").append('<td><select id= sReceiver'+i+' class="span1"><option>Select</option>');
+					for (var j=1; j<=numReceivers; j++)
+					{
+						var name = "sReceiver" + i;
+						var selectOption = document.getElementById(name);
+						$(selectOption).append('<option value = R' +j+'>R'+j+'</option>');
+					}
+					$("#dynamic").append('</select></td>');
+					$("#dynamic").append('<td><input type="text" id= sX'+i+' class="span1"></td>');
+					$("#dynamic").append('<td><input type="text" id= sY'+i+' class="span1"></td>');
+					$("#dynamic").append('<td><input type="text" id= sRange'+i+' class="span1"></td>');
+					$("#dynamic").append('<td><input type="text" id= sTime'+i+' class="span1"></td>');
+					$("#dynamic").append('<td><input type="text" id= sData'+i+' class="span1"></td>');
+					$("#dynamic").append('</tr>');
+					if (i == numSenders - 1)
+					{
+						$("#dynamic").append('</table>');
+					}
+				}
+				$("#dynamic").append("<br>");
+				for(var i=1; i<=numReceivers; i++){
+					if (i == 1)
+					{
+						$("#dynamic").append('<table>');
+						$("#dynamic").append('<tr>');
+						$("#dynamic").append('<th></th>');
+						$("#dynamic").append('<th>X-Coordinate</th>');
+						$("#dynamic").append('<th>Y-Coordinate</th>');
+						$("#dynamic").append('<th>Range</th>');
+						$("#dynamic").append('</tr>');
+					}
+					$("#dynamic").append('<tr>');
+					$("#dynamic").append('<td><label id= R'+i+'>R'+i+'</label></td>');;
+					$("#dynamic").append('<td><input type="text" id= rX'+i+' class="span1"></td>');
+					$("#dynamic").append('<td><input type="text" id= rY'+i+' class="span1"></td>');
+					$("#dynamic").append('<td><input type="text" id= rRange'+i+' class="span1"></td>');
+					$("#dynamic").append('</tr>');
+					//$("#dynamic").append("<br>");
+					if (i == numSenders - 1)
+					{
+						$("#dynamic").append('</table>');
+					}
+				}
+			}
+		}
+		
+		function getContent(protocol, protocolIdentity){
+			document.getElementById("submitScenario").disabled = true;
+			protocolType = protocol;
+			$(".span1").each(function(k,v){
+				var o = $(this);
+				var oValue = o.val();
+				inputArray.push(oValue);
+			});
+			splitArray();
+			
+			tempNumbers.sort(function(a,b){return a-b});
+			allowedReceivers.length = 0;
+			for(var b = 0; b < tempNumbers.length; b++)
+			{
+				for(var a = 0; a < tempReceivers.length; a++)
+				{
+					var receiverName = (tempReceivers[a][0]).replace( /^\D+/g, '');
+					//alert("compare = " + compare + " receiverName = " + receiverName);
+					if (tempNumbers[b] == receiverName)
+					{
+						allowedReceivers.push(tempReceivers[a]);
+					}
+				}
+			}
+			
+			drawNodesDiagram();
+			drawCanvas();
+			canvas1 = document.getElementById('drawCanvas');
+			context1 = canvas1.getContext('2d');
+			drawCanvasBox();
+			if (protocol == "aMac")
+			{
+				tt = setInterval(function(){drawTimelines(aMac, protocolIdentity, "null")}, 1);
+			}
+			else if (protocol == "bMac")
+			{
+				tt = setInterval(function(){drawTimelines(bMac, protocolIdentity, "null")}, 1);
+			}
+			else if (protocol == "ir")
+			{
+				tt = setInterval(function(){drawTimelines(ir, protocolIdentity, "null")}, 1);
+			}
+			else if (protocol == "dsss")
+			{
+				tt = setInterval(function(){drawTimelines(dsss, protocolIdentity, "null")}, 1);
+			}
+			else if (protocol == "fhss")
+			{
+				tt = setInterval(function(){drawTimelines(fhss, protocolIdentity, "null")}, 1);
+			}			
+		}
+		
+		function splitArray(){
+			var receiversStart;
+			receiversStart = numberSenders * 6;
+			
+			for(var i=0; i<numberSenders; i++){
+				var number = i + 1;
+				var text = "S" + number;
+				var arIndex = 6 * i;
+				//alert("text = " + text + " arIndex = " + arIndex);
+				//store Sender's name, receiver's name, x-coord, y-coord, broadcast range
+				var sComponents = [text, inputArray[arIndex], inputArray[arIndex + 1], inputArray[arIndex + 2], inputArray[arIndex + 3], inputArray[arIndex + 4], inputArray[arIndex + 5]];
+				sendersArray.push(sComponents);
+				
+				//find the greatest difference in the x and y coordinates among all the nodes
+				if (scaleCounter == 0)
+				{
+					smallestX = parseInt(inputArray[arIndex + 1]) - parseInt(inputArray[arIndex + 3]);
+					biggestX = parseInt(inputArray[arIndex + 1]) + parseInt(inputArray[arIndex + 3]);
+					smallestY = parseInt(inputArray[arIndex + 2]) - parseInt(inputArray[arIndex + 3]);
+					biggestY = parseInt(inputArray[arIndex + 2]) + parseInt(inputArray[arIndex + 3]);
+					biggestRadius = parseInt(inputArray[arIndex + 3]);
+				}
+				else
+				{
+					if ((parseInt(inputArray[arIndex + 1]) - parseInt(inputArray[arIndex + 3])) < parseInt(smallestX))
+					{
+						smallestX = parseInt(inputArray[arIndex + 1]) - parseInt(inputArray[arIndex + 3]);
+					}
+					if ((parseInt(inputArray[arIndex + 1]) + parseInt(inputArray[arIndex + 3])) > parseInt(biggestX))
+					{
+						biggestX = parseInt(inputArray[arIndex + 1]) + parseInt(inputArray[arIndex + 3]);
+					}
+					if ((parseInt(inputArray[arIndex + 2]) - parseInt(inputArray[arIndex + 3])) < parseInt(smallestY))
+					{
+						smallestY = parseInt(inputArray[arIndex + 2]) - parseInt(inputArray[arIndex + 3]);
+					}
+					if ((parseInt(inputArray[arIndex + 2]) + parseInt(inputArray[arIndex + 3])) > parseInt(biggestY))
+					{
+						biggestY = parseInt(inputArray[arIndex + 2]) + parseInt(inputArray[arIndex + 3]);
+					}
+					if (parseInt(inputArray[arIndex + 3]) > biggestRadius)
+					{
+						biggestRadius = parseInt(inputArray[arIndex + 3]);
+					}
+				}
+				scaleCounter++;
+			}
+			
+			for(var i=0; i<numberReceivers; i++){
+				var number = i + 1;
+				var text = "R" + number;
+				var arIndex = receiversStart + (3 * i);
+				var rComponents = [text, inputArray[arIndex], inputArray[arIndex + 1], inputArray[arIndex + 2], 0, 0, 0, 0, 0];
+				receiversArray.push(rComponents);
+				
+				//find the greatest difference in the x and y coordinates among all the nodes
+				if (scaleCounter == 0)
+				{
+					smallestX = parseInt(inputArray[arIndex]) - parseInt(inputArray[arIndex + 2]);
+					biggestX = parseInt(inputArray[arIndex]) + parseInt(inputArray[arIndex + 2]);
+					smallestY = parseInt(inputArray[arIndex + 1]) - parseInt(inputArray[arIndex + 2]);
+					biggestY = parseInt(inputArray[arIndex + 1]) + parseInt(inputArray[arIndex + 2]);
+					biggestRadius = parseInt(inputArray[arIndex + 2]);
+				}
+				else
+				{
+					var abc = parseInt(inputArray[arIndex]) - parseInt(inputArray[arIndex + 2]);
+					//alert("inputArray[arIndex] = " + inputArray[arIndex] + " inputArray[arIndex + 2] = " + inputArray[arIndex + 2] + "smallestX = " + abc);
+					if ((parseInt(inputArray[arIndex]) - parseInt(inputArray[arIndex + 2])) < parseInt(smallestX))
+					{
+						smallestX = parseInt(inputArray[arIndex]) - parseInt(inputArray[arIndex + 2]);
+					}
+					if ((parseInt(inputArray[arIndex]) + parseInt(inputArray[arIndex + 2])) > parseInt(biggestX))
+					{
+						biggestX = parseInt(inputArray[arIndex]) + parseInt(inputArray[arIndex + 2]);
+					}
+					if ((parseInt(inputArray[arIndex + 1]) - parseInt(inputArray[arIndex + 2])) < parseInt(smallestY))
+					{
+						smallestY = parseInt(inputArray[arIndex + 1]) - parseInt(inputArray[arIndex + 2]);
+					}
+					if ((parseInt(inputArray[arIndex + 1]) + parseInt(inputArray[arIndex + 2])) > parseInt(biggestY))
+					{
+						biggestY = parseInt(inputArray[arIndex + 1]) + parseInt(inputArray[arIndex + 2]);
+					}
+					if (parseInt(inputArray[arIndex + 2]) > biggestRadius)
+					{
+						biggestRadius = parseInt(inputArray[arIndex + 2]);
+					}					
+				}
+				scaleCounter++;
+			}
+			//alert("smallestX = " + smallestX + ", biggestX = " + biggestX + ", smallestY = "+ smallestY + ", biggestY = " + biggestY);
+			checkHiddenExposed();
+		}
+		
+		function checkHiddenExposed(){
+			for(var j = 0; j < sendersArray.length; j++)
+			{
+				checkWithinRange(sendersArray[j], j);			
+			}
+			for(var i=1; i<=numberSenders; i++){
+				if (i == 1)
+				{
+					$("#resultTable").append('<table>');
+					$("#resultTable").append('<tr>');
+					$("#resultTable").append('<th>Sender</th>');
+					$("#resultTable").append('<th>Receiver</th>');
+					$("#resultTable").append('<th>Allowed to Send</th>');
+					$("#resultTable").append('<th>Possible Problems</th>');
+					$("#resultTable").append('</tr>');
+				}
+				$("#resultTable").append('<tr>');
+				$("#resultTable").append('<td><label id= S'+i+'>S'+i+'</label></td>');
+				if (sendersArray[i-1][1] == "Select")
+				{
+					$("#resultTable").append('<td><label></label></td>');
+				}
+				else
+				{
+					$("#resultTable").append('<td><label>'+sendersArray[i-1][1]+'</label></td>');
+				}
+				if (sendersArray[i-1][7] == true)
+				{
+					allPacketsArrival.push(sendersArray[i-1][5]);
+					allPacketsSize.push(sendersArray[i-1][6]);
+					allowedSenders.push(sendersArray[i-1]);
+					var rIndex = (sendersArray[i-1][1]).replace( /^\D+/g, '') - 1;
+					var rName = (sendersArray[i-1][1]).replace( /^\D+/g, '') ;
+					var same = false;
+					for (var a = 0; a < allowedReceivers.length; a++)
+					{
+						if (allowedReceivers[a][0] == receiversArray[rIndex][0])
+						{
+							same = true;
+						}				
+					}
+					if (same == false)
+					{
+						allowedReceivers.push(receiversArray[rIndex]);
+						tempReceivers.push(receiversArray[rIndex]);
+						tempNumbers.push(rName);
+					}
+					$("#resultTable").append('<td align=center><img src=ok.jpg></td>');
+				}
+				else //if (sendersArray[i-1][7] == false)
+				{
+					$("#resultTable").append('<td align=center><img src=notOk.jpg></td>');
+				}
+				message = HiddenExposed(sendersArray[i-1]);
+				$("#resultTable").append('<td><label>'+message+'</label></td>');
+				
+				$("#resultTable").append('</tr>');
+				
+				if (i == numberSenders)
+				{
+					$("#resultTable").append('</table>');
+				}
+			}
+
+		}
+		
+		function checkWithinRange(senderAr, index){
+			var receiverIndex1;
+			var receiverIndex2;
+			
+			for (i = 0; i < receiversArray.length; i++)
+			{
+				if (senderAr[1] == receiversArray[i][0])
+				{
+					if (Math.pow((senderAr[2] - receiversArray[i][1]), 2) + Math.pow((senderAr[3] - receiversArray[i][2]), 2) <= Math.pow((receiversArray[i][3]), 2))
+					{
+						sendersArray[index][7] = true;
+						//signifies current state (check data arrival)
+						//if data arrives at time 0, directly enter DIFS state
+						if (sendersArray[index][5] == 0)
+						{
+							sendersArray[index][8] = 0;
+						}
+						else
+						{
+							sendersArray[index][8] = 8; 
+						}
+						sendersArray[index][9] = 0;	//signifies number of backoff
+						sendersArray[index][10] = false; //signifies if another packet is sent at the same time
+						sendersArray[index][11] = false; //signifies if the medium is busy during DIFS
+						sendersArray[index][12] = 0;	//equivalent to picture_x variable 
+						sendersArray[index][13] = false; //check if the random number of BOs has been selected
+						sendersArray[index][14] = false; //check if the data packet is sent successfully, including the acknowledgement received
+						sendersArray[index][15] = 0;	//contention window counter
+						sendersArray[index][16] = 0;	//make sure that cw counter not added more than once
+						sendersArray[index][17] = 0;	//NAV Value for RTS
+						sendersArray[index][18] = 0;	//NAV Value for CTS
+						sendersArray[index][19] = 0;	//NAV Value for Data
+						sendersArray[index][20] = 0;	//signifies 2nd state of the node
+						sendersArray[index][21] = 0;	//signifies 3rd state of the node
+						sendersArray[index][22] = 1;	//for usage in 4-way handshake.
+					}
+					else
+					{
+						sendersArray[index][7] = false;
+					}				
+				}
+			}
+		}	
+		
+		function HiddenExposed(senderDetails)
+		{
+			message = '';
+			
+			//check for hidden terminals
+			if (senderDetails[7] == true)
+			{
+				for (i = 0; i < sendersArray.length; i++)
+				{
+					if (senderDetails[0] != sendersArray[i][0])
+					{			
+						//send to same receiver && the compared sender is entitled to send to receiver
+						if (senderDetails[1] == sendersArray[i][1] && sendersArray[i][7] == true)
+						{
+							if (Math.pow((sendersArray[i][2] - senderDetails[2]), 2) + Math.pow((sendersArray[i][3] - senderDetails[3]), 2) <= Math.pow((senderDetails[4]), 2))
+							{
+							}
+							else if (Math.pow((senderDetails[2] - sendersArray[i][2]), 2) + Math.pow((senderDetails[3] - sendersArray[i][3]), 2) <= Math.pow((sendersArray[i][4]), 2))
+							{
+							}
+							else
+							{
+								message += senderDetails[0] + " is a hidden node of " + sendersArray[i][0] + ".\n";
+							}
+						}
+					}
+				}
+			}
+			for (var z = 0; z < sendersArray.length; z++)
+			{
+				if (senderDetails[0] != sendersArray[z][0] && senderDetails[5] && sendersArray[z][7] == true)
+				{
+					if (Math.pow((sendersArray[z][2] - senderDetails[2]), 2) + Math.pow((sendersArray[z][3] - senderDetails[3]), 2) <= Math.pow((senderDetails[4]), 2))
+					{
+						if (sendersArray[z][1] != senderDetails[1])
+						{
+							receiverIndex1 = (sendersArray[z][1]).replace( /^\D+/g, '') - 1; //compare with senderDetails
+							receiverIndex2 = (senderDetails[1]).replace( /^\D+/g, '') - 1;	//compare with sendersArray
+							//alert("receiver1 = " + receiversArray[receiverIndex1]);
+							//alert("receiver2 = " + receiversArray[receiverIndex2]);
+							if (Math.pow((receiversArray[receiverIndex1][1] - senderDetails[2]), 2) + Math.pow((receiversArray[receiverIndex1][2] - senderDetails[3]), 2) <= Math.pow((senderDetails[4]), 2))
+							{}
+							else if (Math.pow((senderDetails[2] - receiversArray[receiverIndex1][1]), 2) + Math.pow((senderDetails[3] - receiversArray[receiverIndex1][2]), 2) <= Math.pow((receiversArray[receiverIndex1][3]), 2))
+							{}
+							else if (Math.pow((sendersArray[z][2] - receiversArray[receiverIndex2][1]), 2) + Math.pow((sendersArray[z][3] - receiversArray[receiverIndex2][2]), 2) <= Math.pow((receiversArray[receiverIndex2][3]), 2))
+							{}
+							else if (Math.pow((receiversArray[receiverIndex2][1] - sendersArray[z][2]), 2) + Math.pow((receiversArray[receiverIndex2][2] - sendersArray[z][3]), 2) <= Math.pow((sendersArray[z][4]), 2))
+							{}
+							else
+							{
+								message += senderDetails[0] + " is an exposed node of " + sendersArray[z][0] + ".\n";
+							}
+						}
+					}
+					else if (Math.pow((senderDetails[2] - sendersArray[z][2]), 2) + Math.pow((senderDetails[3] - sendersArray[z][3]), 2) <= Math.pow((sendersArray[z][4]), 2))
+					{
+						if (sendersArray[z][1] != senderDetails[1])
+						{
+							//alert("receiver1 = " + receiversArray[receiverIndex1]);
+							//alert("receiver2 = " + receiversArray[receiverIndex2]);						
+							receiverIndex1 = (sendersArray[z][1]).replace( /^\D+/g, '') - 1; //compare with senderDetails
+							receiverIndex2 = (senderDetails[1]).replace( /^\D+/g, '') - 1;	//compare with sendersArray
+							if (Math.pow((receiversArray[receiverIndex1][1] - senderDetails[2]), 2) + Math.pow((receiversArray[receiverIndex1][2] - senderDetails[3]), 2) <= Math.pow((senderDetails[4]), 2))
+							{
+							}
+							else if (Math.pow((senderDetails[2] - receiversArray[receiverIndex1][1]), 2) + Math.pow((senderDetails[3] - receiversArray[receiverIndex1][2]), 2) <= Math.pow((receiversArray[receiverIndex1][3]), 2))
+							{}
+							else if (Math.pow((sendersArray[z][2] - receiversArray[receiverIndex2][1]), 2) + Math.pow((sendersArray[z][3] - receiversArray[receiverIndex2][2]), 2) <= Math.pow((receiversArray[receiverIndex2][3]), 2))
+							{}
+							else if (Math.pow((receiversArray[receiverIndex2][1] - sendersArray[z][2]), 2) + Math.pow((receiversArray[receiverIndex2][2] - sendersArray[z][3]), 2) <= Math.pow((sendersArray[z][4]), 2))
+							{}
+							else
+							{
+								message += senderDetails[0] + " is an exposed node of " + sendersArray[z][0] + ".\n";
+							}
+						}
+					}					
+				}
+			}
+			return message;
+		}
+
+		function get_random_color() 
+		{
+			var letters = '0123456789ABCDEF'.split('');
+			var color = '#';
+			for (var i = 0; i < 6; i++ ) {
+				color += letters[Math.round(Math.random() * 15)];
+			}
+			return color;
+		}
+		
+		function hexToR(h) 
+		{
+			return parseInt((cutHex(h)).substring(0,2),16)
+		}
+		
+	    function hexToG(h) 
+		{
+			return parseInt((cutHex(h)).substring(2,4),16)
+		}
+		
+		function hexToB(h) 
+		{
+			return parseInt((cutHex(h)).substring(4,6),16)
+		}
+		
+		function cutHex(h) 
+		{
+			return (h.charAt(0)=="#") ? h.substring(1,7):h
+		}
+		
+		function drawNodesDiagram()
+		{
+			var scaleSize = 1;
+			var differenceX = biggestX - smallestX;
+			var differenceY = biggestY - smallestY;
+			var differenceBoth;
+			if (differenceX > differenceY)
+			{
+				differenceBoth = differenceX;
+			}
+			else
+			{
+				differenceBoth = differenceY;
+			}
+			
+			if (differenceX <= 1249 && differenceY <= 399)
+			{
+				scaleSize = 1;
+			}
+			else
+			{
+				var scaleFactorX = Math.ceil(differenceX / 1249);
+				var scaleFactorY = Math.ceil(differenceY / 399);
+				if (scaleFactorX > scaleFactorY)
+				{
+					scaleSize = scaleFactorX;
+				}
+				else
+				{
+					scaleSize = scaleFactorY;
+				}
+			}
+			//alert("scaleSize = " + scaleSize);
+			if (scaleSize == 1)
+			{
+				var shortfallX = 0;
+				var shortfallY = 0;
+			
+				if (biggestX > 1249)
+				{
+					shortfallX = biggestX - 1249;
+				}
+				else if (smallestX < 0)
+				{
+					shortfallX = smallestX;
+				}
+				
+				if (biggestY > 399)
+				{
+					shortfallY = biggestY - 399;
+				}
+				else if (smallestY < 0)
+				{
+					shortfallY = smallestY;
+				}
+				
+				for (var i = 0; i < sendersArray.length; i++)
+				{
+					addNode(sendersArray[i][0], parseInt(sendersArray[i][2]) - shortfallX, parseInt(sendersArray[i][3]) - shortfallY, sendersArray[i][4]);
+				}
+					
+				for (f = 0; f < receiversArray.length; f++)
+				{
+					addNode(receiversArray[f][0], parseInt(receiversArray[f][1]) - shortfallX, parseInt(receiversArray[f][2]) - shortfallY, receiversArray[f][3]);
+				}					
+			}
+			else
+			{
+				var shortfall = 0;
+				var negative = false;
+				if ((Math.ceil(parseInt(biggestX) / scaleSize) > 1249) && (Math.ceil(parseInt(smallestX) / scaleSize) < 0))
+				{
+					if ((Math.ceil(parseInt(biggestX) / scaleSize) - 1249) > shortfall)
+					{
+						//shortfall = Math.ceil(parseInt(biggestX) / scaleSize) - 1249;
+						shortfall = Math.ceil(parseInt(biggestX)) - 1249;
+					}
+					if (Math.ceil((0 - parseInt(smallestX)) / scaleSize) > shortfall)
+					{
+						//shortfall =  Math.ceil((0 - parseInt(smallestX)) / scaleSize);
+						shortfall =  Math.ceil(0 - parseInt(smallestX));
+						negative = true;
+					}
+				}
+				
+				else if (Math.ceil(parseInt(biggestX) / scaleSize) > 1249)
+				{
+					if ((Math.ceil(parseInt(biggestX) / scaleSize) - 1249) > shortfall)
+					{
+						//shortfall = Math.ceil(parseInt(biggestX) / scaleSize) - 1249;
+						shortfall = Math.ceil(parseInt(biggestX)) - 1249;
+					}
+				}
+				else if (Math.ceil(parseInt(smallestX) / scaleSize) < 0)
+				{
+					if (Math.ceil((0 - parseInt(smallestX)) / scaleSize) > shortfall)
+					{
+						//shortfall =  Math.ceil((0 - parseInt(smallestX)) / scaleSize);
+						shortfall =  Math.ceil(0 - parseInt(smallestX));
+						negative = true;
+					}
+				}
+				
+				if ((Math.ceil(parseInt(biggestY) / scaleSize) > 399) && (Math.ceil(parseInt(smallestY) / scaleSize) < 0))
+				{
+					if ((Math.ceil(parseInt(biggestY) / scaleSize) - 399) > shortfall)
+					{
+						//shortfall = Math.ceil(parseInt(biggestY) / scaleSize) - 399;
+						shortfall = Math.ceil(parseInt(biggestY)) - 399;
+					}
+					if (Math.ceil((0 - parseInt(smallestY)) / scaleSize) > shortfall)
+					{
+						//shortfall =  Math.ceil((0 - parseInt(smallestY)) / scaleSize);
+						shortfall =  Math.ceil(0 - parseInt(smallestY));
+						negative = true;
+					}					
+				}
+				else if (Math.ceil(parseInt(biggestY) / scaleSize) > 399)
+				{
+					if ((Math.ceil(parseInt(biggestY) / scaleSize) - 399) > shortfall)
+					{
+						//shortfall = Math.ceil(parseInt(biggestY) / scaleSize) - 399;
+						shortfall = Math.ceil(parseInt(biggestY)) - 399;
+					}
+				}
+				else if (Math.ceil(parseInt(smallestY) / scaleSize) < 0)
+				{
+					if (Math.ceil((0 - parseInt(smallestY)) / scaleSize) > shortfall)
+					{
+						//shortfall =  Math.ceil((0 - parseInt(smallestY)) / scaleSize);
+						shortfall =  Math.ceil(0 - parseInt(smallestY));
+						negative = true;
+					}
+				}
+				
+				if (negative == true)
+				{
+					//shortfall = 0 - shortfall - Math.ceil(parseInt(differenceBoth) / (scaleSize - 1));
+					shortfall = 0 - shortfall;
+				}
+				
+				//alert("shortfall = " + shortfall);
+				for (var i = 0; i < sendersArray.length; i++)
+				{
+					addNode(sendersArray[i][0], Math.ceil(parseInt(sendersArray[i][2] - shortfall) / scaleSize), Math.ceil(parseInt(sendersArray[i][3] - shortfall) / scaleSize), Math.ceil(sendersArray[i][4] / scaleSize));
+				}
+				for (var m = 0; m < receiversArray.length; m++)
+				{
+					addNode(receiversArray[m][0], Math.ceil(parseInt(receiversArray[m][1] - shortfall) / scaleSize), Math.ceil(parseInt(receiversArray[m][2] - shortfall) / scaleSize), Math.ceil(receiversArray[m][3] / scaleSize));
+				}					
+			}
+		}
+
+		function addNode(nodeIdentity, centerX, centerY, radius)
+		{
+			//alert(nodeIdentity + ": centerX = " + centerX + ", centerY = " + centerY + ", radius = " + radius);
+			var canvas = document.getElementById('nodeCanvas');
+			var context = canvas.getContext('2d');
+			var nodeColour = get_random_color();
+				  
+			var R = hexToR(nodeColour);
+			var G = hexToG(nodeColour);
+			var B = hexToB(nodeColour);
+
+			//draw transmission radius
+			context.beginPath();
+			context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+			context.fillStyle = nodeColour;
+			context.globalAlpha = 0.35;
+			context.fill();
+			context.lineWidth = 1;
+			context.strokeStyle = '#000000';
+			context.stroke();
+			
+			var text = nodeIdentity;
+			context.font="14px Georgia";
+			context.fillStyle = "black";
+			context.globalAlpha = 1;
+			context.fillText(text, centerX - 10 , centerY + 5);			
+		}
+		
+		function drawCanvas()
+		{
+			var canvasWidth;
+			var canvasHeight;
+			var estimatedHeight;
+			var randomBO = 0;
+			var totalBO = 0;
+			
+			var latestData = Math.max.apply(Math, allPacketsArrival);
+			var biggestData = Math.max.apply(Math, allPacketsSize);
+			if (protocolType == "aMac")
+			{
+				biggestData = Math.floor((biggestData * 8)/aMac[1]) + 16;
+				for (i = 1; i <= allowedSenders.length; i++)
+				{
+					randomBO = (aMac[6] * i) * aMac[2];
+					totalBO = totalBO + randomBO;
+				}
+			}
+			else if (protocolType == "bMac")
+			{
+				biggestData = Math.floor((biggestData * 8)/bMac[1]) + 16;
+				for (i = 1; i <= allowedSenders.length; i++)
+				{
+					randomBO = (bMac[6] * i) * bMac[2];
+					totalBO = totalBO + randomBO;
+				}
+			}
+			else if (protocolType == "ir")
+			{
+				biggestData = Math.floor((biggestData * 8)/ir[1]) + 16;
+				for (i = 1; i <= allowedSenders.length; i++)
+				{
+					randomBO = (ir[6] * i) * ir[2];
+					totalBO = totalBO + randomBO;
+				}
+			}		
+			else if (protocolType == "dsss")
+			{
+				biggestData = Math.floor((biggestData * 8)/dsss[1]) + 16;
+				for (i = 1; i <= allowedSenders.length; i++)
+				{
+					randomBO = (dsss[6] * i) * dsss[2];
+					totalBO = totalBO + randomBO;
+				}
+			}
+			else if (protocolType == "fhss")
+			{
+				biggestData = Math.floor((biggestData * 8)/fhss[1]) + 16;
+				for (i = 1; i <= allowedSenders.length; i++)
+				{
+					randomBO = (fhss[6] * i) * fhss[2];
+					totalBO = totalBO + randomBO;
+				}
+			}
+			
+			canvasWidth = (allowedSenders.length + allowedReceivers.length) * 90 + 30; 
+			if (canvasWidth < 1250)
+			{
+				canvasWidth = 1250;
+			}
+			if (protocolType == "aMac")
+			{
+				canvasHeight = latestData + biggestData + (1 * totalBO) + 500;
+			}
+			else
+			{
+				canvasHeight = latestData + biggestData + (1 * totalBO) - 200;
+			}
+			$("#wrapper").append('<canvas id = drawCanvas width =' +canvasWidth+ ' height =' +canvasHeight+ 'style="border:1px solid #000000;"></canvas>');
+			$("#wrapper").append('<canvas id="tip" width=200 height=33></canvas>');
+			canvas1 = document.getElementById('drawCanvas');
+			context1 = canvas1.getContext('2d');
+			tipCanvas = document.getElementById("tip");
+			tipCtx = tipCanvas.getContext("2d");
+			canvasOffset = $("#drawCanvas").offset();
+			offsetX = canvasOffset.left;
+			offsetY = canvasOffset.top;
+			
+			
+			canvas1.addEventListener('mousemove', function(evt) {
+			var mousePos = getMousePos(canvas1, evt);
+			var message = 'Relative position: ' + mousePos.x + ',' + mousePos.y;
+			//alert(message);
+			handleMouseMove(mousePos.x, mousePos.y);
+			}, false);
+		  
+			function getMousePos(canvas1, evt) {
+				var rect = canvas1.getBoundingClientRect();
+				return {
+					x: evt.clientX - rect.left,
+					y: evt.clientY - rect.top
+				};
+			}
+		}
+		
+		function handleMouseMove(xPos, yPos)
+		{
+			//alert(dots);
+			var hit = false;
+			for (i = 0; i < dots.length; i++)
+			{
+				if (xPos >= dots[i][0] && xPos <= (dots[i][0] + 40) && yPos == dots[i][1]) 
+				{
+					tipCanvas.style.left = (dots[i][0]) + "px";
+					tipCanvas.style.top = (dots[i][1] - 40) + "px";
+					tipCtx.clearRect(0, 0, tipCanvas.width, tipCanvas.height);
+					wrapText(dots[i][5], 5, 10, 190, 10);
+					//tipCtx.fillText(dots[i][5], 5, 15);
+					hit = true;
+				}
+			}
+			if (!hit) 
+			{
+				tipCanvas.style.left = "-1000px";
+			}
+		}
+		
+		function wrapText(text, x, y, maxWidth, lineHeight) 
+		{
+			var words = text.split(' ');
+			var line = '';
+
+			for(var n = 0; n < words.length; n++) 
+			{
+				var testLine = line + words[n] + ' ';
+				var metrics = tipCtx.measureText(testLine);
+				var testWidth = metrics.width;
+				if (testWidth > maxWidth && n > 0) 
+				{
+					tipCtx.fillText(line, x, y);
+					line = words[n] + ' ';
+					y += lineHeight;
+				}
+				else 
+				{
+					line = testLine;
+				}
+			}
+			tipCtx.fillText(line, x, y);
+		}
+		
+		function drawCanvasBox()
+		{
+			for (i = 0; i < allowedSenders.length; i++)
+			{
+				var xCo = 90 * (i + 1);
+				context1.fillStyle = "black";
+				context1.font="16px Calibri";
+				context1.fillText(allowedSenders[i][0], xCo - 5, 40);
+			}
+			for (j = 0; j < allowedReceivers.length; j++)
+			{
+				var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+				context1.fillStyle = "black";
+				context1.font="16px Calibri";
+				context1.fillText(allowedReceivers[j][0], xCo - 5, 40);
+			}
+		}
+		
+		function drawTimelines(protocol, protocolIdentity, testCase)
+		{
+			timeCount++;
+			//document.getElementById('terminalText').value += timeCount + " timeCount." + "\n";
+			if (canEnd < allowedSenders.length && timeCount > -1)
+			{
+				for (j = 0; j < allowedReceivers.length; j++)
+				{
+					var xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+					
+					if (timeCount % 50 == 0)
+					{
+						if (allowedReceivers[j][5] > 0)
+						{}
+						else
+						{
+							context1.fillStyle = "black";
+							context1.font="12px Calibri";
+							context1.fillText(timeCount, xCo + 3, canvas_y + 5);
+						}
+					}
+					
+					//Draw axis
+					context1.beginPath();
+					context1.moveTo(xCo + 1, canvas_y);
+					context1.lineTo(xCo + 1, canvas_y + 1);
+					context1.strokeStyle = "black";
+					context1.stroke();				
+
+					if (allowedReceivers[j][4] > 0)
+					{
+						context1.fillStyle="#D2B48C";
+						context1.fillRect(xCo - 40,canvas_y,40,1);
+						context1.drawImage(imgArray[11], 0, allowedReceivers[j][6], 40, 1, xCo - 40, canvas_y, 40, 1);
+						var dotText = "";
+						dotText = "NAV(RTS) set by " + allowedReceivers[j][9];
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
+						dots.push(dotsComponents);
+					}
+
+					if (allowedReceivers[j][5] > 0)
+					{
+						context1.fillStyle="#D2B48C";
+						context1.fillRect(xCo + 2,canvas_y,40,1);
+						context1.drawImage(imgArray[12], 0, allowedReceivers[j][7], 40, 1, xCo + 2, canvas_y, 40, 1);
+						var dotText = "";
+						dotText = "NAV(CTS) set by " + allowedReceivers[j][10];
+						var dotsComponents = [xCo + 2, canvas_y, 1, 1, "red", dotText];
+						dots.push(dotsComponents);							
+					}					
+				}
+				
+				for (i = 0; i < allowedSenders.length; i++)
+				{
+					var xCo = 90 * (i + 1);
+					
+					if (timeCount % 50 == 0)
+					{
+						if (allowedSenders[i][8] == 12 && allowedSenders[i][18] > 0)
+						{}
+						else if (allowedSenders[i][20] == 12 && allowedSenders[i][18] > 0)
+						{}
+						else
+						{
+							context1.fillStyle = "black";
+							context1.font="12px Calibri";
+							context1.fillText(timeCount, xCo + 3, canvas_y + 5);
+						}
+					}
+					
+					//Draw axis
+					context1.beginPath();
+					context1.moveTo(xCo + 1, canvas_y);
+					context1.lineTo(xCo + 1, canvas_y + 1);
+					context1.strokeStyle = "black";
+					context1.stroke();
+					
+					if (allowedSenders[i][8] == 0)
+					{
+						context1.fillStyle="#7283FE";
+						context1.fillRect(xCo - 40,canvas_y,40,1); 
+						context1.drawImage(imgArray[0], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);				
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "Waiting for a period of DIFS"];
+						dots.push(dotsComponents);
+					}
+					
+					else if (allowedSenders[i][8] == 1)
+					{
+						context1.drawImage(imgArray[1], 0, 0, 40, 1, xCo - 40, canvas_y, 40, 1);
+						var busyNodes = new Array();
+						for (var g = 0; g < allowedSenders.length; g++)
+						{
+							if (allowedSenders[g][8] == 3 || allowedSenders[g][8] == 9)
+							{
+								busyNodes.push(allowedSenders[g][0]);
+							}
+							else if (allowedSenders[g][8] == 5 || allowedSenders[g][8] == 10 || allowedSenders[g][20] == 10)
+							{
+								busyNodes.push(allowedSenders[g][1]);
+							}
+						}
+						var dotText = "";
+						for (var h = 0; h < busyNodes.length; h++)
+						{
+							if (busyNodes.length == 1)
+							{
+								dotText = "Medium is sensed to be busy because " + busyNodes[0] + " is transmitting";
+							}
+							else
+							{
+								if (h == 0)
+								{
+									dotText = "Medium is sensed to be busy because " + busyNodes[0];
+								}
+								else if (h == busyNodes.length - 1)
+								{
+									dotText += ", " + busyNodes[h] + " are transmitting";
+								}
+								else
+								{
+									dotText += ", " + busyNodes[h];
+								}
+							}
+						}
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
+						dots.push(dotsComponents);							
+					}
+					
+					else if (allowedSenders[i][8] == 2)
+					{
+						if (protocol[2] == 50)
+						{
+							context1.drawImage(randomBOarray[2], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
+						}
+						else if (protocol[2] == 20)
+						{
+							context1.drawImage(randomBOarray[1], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
+						}
+						else if (protocol[2] == 10)
+						{
+							context1.drawImage(randomBOarray[0], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
+						}
+						var dotText = "";
+						dotText = "Executing the remaining " + allowedSenders[i][9] + " BO time slots";
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
+						dots.push(dotsComponents);								
+					}
+					
+					else if (allowedSenders[i][8] == 3)
+					{
+						context1.fillStyle="#73F023";
+						context1.fillRect(xCo - 40,canvas_y,40,1);
+						context1.drawImage(imgArray[3], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);			
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "Sending Data"];
+						dots.push(dotsComponents);						
+					}
+					
+					else if (allowedSenders[i][8] == 4)
+					{
+						var showSifs = true;
+						var dotText = "";
+						//the only time when the SIFS will be drawn on the transmitter's timeline
+						if (allowedSenders[i][22] == 2 && protocolIdentity == "fourWay")
+						{
+						}
+						else
+						{
+							for (j = 0; j < allowedReceivers.length; j++)
+							{
+								if (allowedReceivers[j][0] == allowedSenders[i][1])
+								{
+									xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+									if (allowedReceivers[j][4] > 0)
+									{
+										showSifs = false;
+									}
+									else if (allowedReceivers[j][5] > 0)
+									{
+										showSifs = false;
+									}
+								}
+							}
+						}
+						//if (allowedSenders[i][12] <= protocol[4])
+						//{
+							if (showSifs == false && allowedSenders[i][12] <= 40)
+							{
+								xCo = 90 * (i + 1);
+								dotText = "No CTS received from " + allowedSenders[i][1] + " because " + allowedSenders[i][1] + " NAV is not cleared. Waiting for timeout.";
+								var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
+								dots.push(dotsComponents);	
+							}
+							else if (protocolIdentity == "fourWay" && allowedSenders[i][10] == true)
+							{
+								if (allowedSenders[i][12] <= protocol[4])
+								{
+									context1.fillStyle="#CC5599";
+									context1.fillRect(xCo - 40,canvas_y,40,1);
+									context1.drawImage(imgArray[4], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
+									var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "SIFS"];
+									dots.push(dotsComponents);	
+								}
+								xCo = 90 * (i + 1);
+								dotText = "No CTS received from " + allowedSenders[i][1] + " because packet collision detected. Waiting for timeout.";
+								var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
+								dots.push(dotsComponents);
+							}
+							else
+							{
+								context1.fillStyle="#CC5599";
+								context1.fillRect(xCo - 40,canvas_y,40,1);
+								context1.drawImage(imgArray[4], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
+								var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "SIFS"];
+								dots.push(dotsComponents);									
+							}
+						//}
+					}
+					
+					else if (allowedSenders[i][8] == 5)
+					{
+						for (j = 0; j < allowedReceivers.length; j++)
+						{
+							if (allowedReceivers[j][0] == allowedSenders[i][1])
+							{
+								xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+							}
+						}					
+						if (allowedSenders[i][10] == false)
+						{
+							context1.fillStyle="#FF9900";
+							context1.fillRect(xCo - 40,canvas_y,40,1);
+							context1.drawImage(imgArray[5], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
+							var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "ACK"];
+							dots.push(dotsComponents);										
+						}
+						else
+						{
+							var busyNodes = new Array();
+							for (var g = 0; g < allowedSenders.length; g++)
+							{
+								if (allowedSenders[g][8] == 3 || allowedSenders[g][8] == 9)
+								{
+									busyNodes.push(allowedSenders[g][0]);
+								}
+								else if (allowedSenders[g][8] == 10 || allowedSenders[g][20] == 10)
+								{
+									busyNodes.push(allowedSenders[g][1]);
+								}
+								else if (allowedSenders[g][8] == 5 && allowedSenders[g][10] == false)
+								{
+									busyNodes.push(allowedSenders[g][1]);
+								}
+							}
+							var dotText = "";
+							if (busyNodes.length == 0)
+							{
+								dotText = "No ACK sent, due to data packet collision";
+							}
+							else
+							{
+								for (var h = 0; h < busyNodes.length; h++)
+								{
+									if (h == 0 && busyNodes.length == 1)
+									{
+										dotText = "Collision of packets because " + busyNodes[0] + " is also transmitting. Retransmission required.";
+									}
+									else
+									{
+										if (h == 0)
+										{
+											dotText = "Collision of packets because " + busyNodes[0];
+										}
+										else if (h == busyNodes.length - 1)
+										{
+											dotText += ", " + busyNodes[h] + " are also transmitting. Retransmission required.";
+										}
+										else
+										{
+											dotText += ", " + busyNodes[h];
+										}
+									}
+								}
+							}
+							var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
+							dots.push(dotsComponents);
+						}
+					}
+					
+					else if (allowedSenders[i][8] == 9)
+					{
+						context1.fillStyle="#FFD700";
+						context1.fillRect(xCo - 40,canvas_y,40,1);
+						context1.drawImage(imgArray[9], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);			
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "RTS"];
+						dots.push(dotsComponents);
+					}					
+
+					else if (allowedSenders[i][8] == 10)
+					{
+						for (j = 0; j < allowedReceivers.length; j++)
+						{
+							if (allowedReceivers[j][0] == allowedSenders[i][1])
+							{
+								xCo = (90 * (j + 1)) + (90 * allowedSenders.length);
+							}
+						}					
+						if (allowedSenders[i][10] == false)
+						{
+							context1.fillStyle="#FFD700";
+							context1.fillRect(xCo - 40,canvas_y,40,1);
+							context1.drawImage(imgArray[10], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);					
+							var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "CTS"];
+							dots.push(dotsComponents);
+						}
+					}
+					
+					if (allowedSenders[i][8] == 11)
+					{
+						context1.fillStyle="#D2B48C";
+						context1.fillRect(xCo - 40,canvas_y,40,1);
+						context1.drawImage(imgArray[11], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);									
+						var dotText = "";
+						dotText = "NAV(RTS) set by " + allowedSenders[i][23];
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
+						dots.push(dotsComponents);
+					}
+
+					if (allowedSenders[i][8] == 12 || allowedSenders[i][20] == 12)
+					{
+						context1.fillStyle="#D2B48C";
+						context1.fillRect(xCo + 2,canvas_y,40,1);
+						context1.drawImage(imgArray[12], 0, allowedSenders[i][21], 40, 1, xCo + 2, canvas_y, 40, 1);									
+						var dotText = "";
+						dotText = "NAV(CTS) set by " + allowedSenders[i][24];
+						var dotsComponents = [xCo + 2, canvas_y, 1, 1, "red", dotText];
+						dots.push(dotsComponents);
+					}
+					
+					if (i == allowedSenders.length - 1)
+					{
+						canvas_y++;
+						clearInterval(tt);
+						callback(protocol, protocolIdentity, testCase);						
+					}
+				}
+			}
+			else 
+			{
+				clearInterval(tt);
+			}
+			//timeCount++;
+		}
+		
+		function callback(protocol, protocolIdentity, testCase)
+		{	
+			canEnd = 0;
+			for (i = 0; i < allowedSenders.length; i++)
+			{
+				//In NAV RTS state
+				if (allowedSenders[i][8] == 11)
+				{
+					allowedSenders[i][17]--;
+					allowedSenders[i][12]++;
+					
+					//Finish NAV RTS
+					if (allowedSenders[i][17] == 0)
+					{
+						//still got data packet to send
+						if (allowedSenders[i][14] == false && timeCount >= allowedSenders[i][5])
+						{
+							allowedSenders[i][8] = 0;
+							allowedSenders[i][12] = 0;
+						}
+						//data packet successfully sent
+						else
+						{
+							allowedSenders[i][8] = 6;
+							allowedSenders[i][12] = 0;
+						}
+					}
+				}
+				
+				//In NAV CTS state
+				if (allowedSenders[i][8] == 12 || allowedSenders[i][20] == 12)
+				{
+					allowedSenders[i][18]--;
+					allowedSenders[i][21]++;
+					
+					//Finish NAV CTS
+					if (allowedSenders[i][18] == 0  && timeCount >= allowedSenders[i][5])
+					{
+						allowedSenders[i][20] = 0;
+						allowedSenders[i][21] = 0;
+						allowedSenders[i][12] = 0;
+						if (allowedSenders[i][14] == false)
+						{
+							allowedSenders[i][8] = 0;
+						}
+						else
+						{
+							allowedSenders[i][8] = 6;
+						}
+					}
+				}				
+				
+				//before the arrival of the data packet
+				if (allowedSenders[i][8] == 8)
+				{
+					if (timeCount == allowedSenders[i][5])
+					{
+						document.getElementById('terminalText').value += "At " + timeCount + ", data packet arrives at " + allowedSenders[i][0] + ".\n";
+						if (mediumBusy == false)
+						{
+							allowedSenders[i][8] = 0;
+						}
+						else if (mediumBusy == true)
+						{
+							allowedSenders[i][8] = 1;
+							
+							var collisionTimes;
+							var cWindow = protocol[6] + 1;
+							if (allowedSenders[i][15] == 0 || allowedSenders[i][15] == 1)
+							{
+								cWindow = protocol[6];
+							}
+							else
+							{
+								collisionTimes = allowedSenders[i][15] - 1;
+								for (n = 1; n <= collisionTimes; n++)
+								{
+									cWindow = cWindow * 2;
+								}
+								cWindow = cWindow - 1;
+							}
+							
+							if (cWindow > (protocol[7] + 1))
+							{
+								cWindow = protocol[7];
+							}
+							var randomNum = Math.floor(Math.random()*cWindow);
+							if(testCase == "2b")
+							{
+								allowedSenders[i][9] = 8;
+							}
+							else if (testCase == "2c")
+							{
+								allowedSenders[0][9] = 5;
+								allowedSenders[1][9] = 6;
+							}
+							else if (testCase == "2d")
+							{
+								allowedSenders[1][9] = 4;
+								allowedSenders[2][9] = 4;								
+							}
+							else
+							{
+								allowedSenders[i][9] = randomNum;
+							}
+							document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[i][0] + " sensed that the channel is busy, and randomly selects " + allowedSenders[i][9] + " backoff timeslots." + ".\n";
+							allowedSenders[i][13] = true;
+						}
+					}
+				}
+
+				//Medium sensed busy
+				//Rationale: Continue with the busy timeline, so long as medium is still busy
+				else if (allowedSenders[i][8] == 1)
+				{
+					var othersBusy = false;
+					//Check if the other nodes are transmitting or not
+					for (j = 0; j < allowedSenders.length; j++)
+					{
+						if (allowedSenders[i][0] != allowedSenders[j][0])
+						{
+							if (allowedSenders[j][8] == 3)
+							{
+								othersBusy = true;
+							}
+							else if (allowedSenders[j][8] == 5 && allowedSenders[j][10] == false)
+							{	
+								othersBusy = true;
+							}
+							else if (allowedSenders[j][8] == 9)
+							{
+								othersBusy = true;
+							}
+							else if (allowedSenders[j][8] == 10)
+							{
+								othersBusy = true;
+							}
+						}
+					}
+					
+					//if other nodes are not transmitting, can exit busy timeline
+					if (othersBusy == false)
+					{
+						allowedSenders[i][8] = 0;
+					}
+				}
+
+				//Executing DIFS
+				//Rationale: DIFS will always be executed in full then leave to perform other states
+				else if (allowedSenders[i][8] == 0)
+				{
+					if (timeCount == 0 && allowedSenders[i][5] == 0)
+					{
+						document.getElementById('terminalText').value += "At " + timeCount + ", data packet arrives at " + allowedSenders[i][0] + ".\n";
+					}
+					if (allowedSenders[i][12] == protocol[0])
+					{
+						//reset picture_x equals to 0
+						allowedSenders[i][12] = 0;
+						
+						//Check that the medium was not busy during the DIFS executions, 
+						//and the number of random BOs = 0. If both conditions are satisfied, 
+						//send data
+						if (allowedSenders[i][11] == false && allowedSenders[i][9] == 0)
+						{
+							//if 2-way handshake is selected, data can be sent immediately
+							if (protocolIdentity == "twoWay")
+							{
+								allowedSenders[i][8] = 3;
+								var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+								allowedSenders[i][9] = dataLength;
+							}
+							else
+							{
+								allowedSenders[i][8] = 9;
+							}
+							allowedSenders[i][13] = false;
+							mediumBusy = true;							
+						}
+						
+						//Executed in times when packets collide or when channel is sensed to be busy when the packet first arrived
+						//Condition: (medium was not sensed to be busy during DIFS, and backoff has been selected)
+						else if (allowedSenders[i][11] == false && allowedSenders[i][9] > 0)
+						{
+							var othersTransmit = false;
+							var needNav = false;
+							
+							for (u = 0; u < allowedSenders.length; u++)
+							{
+								if (allowedSenders[i][0] != allowedSenders[u][0])
+								{
+									if (allowedSenders[u][8] == 3)
+									{
+										othersTransmit = true;
+									}
+									else if (allowedSenders[u][8] == 5 && allowedSenders[u][10] == false)
+									{
+										othersTransmit = true;
+									}
+									else if (allowedSenders[u][8] == 9)
+									{
+										if (protocolIdentity == "fourWay")
+										{
+											if (Math.pow((allowedSenders[i][2] - allowedSenders[u][2]), 2) + Math.pow((allowedSenders[i][3] - allowedSenders[u][3]), 2) <= Math.pow((allowedSenders[u][4]), 2))
+											{
+												if (allowedSenders[u][12] == 0)
+												{
+													var dataLength = Math.floor((allowedSenders[u][6] * 8)/protocol[1]) + 16;
+													var navRts = 40 + protocol[4] + 40 + protocol[4] + dataLength + protocol[4] + 30;
+												
+													allowedSenders[i][8] = 11;
+													if (allowedSenders[i][17] <= navRts)
+													{
+														allowedSenders[i][12] = 0;
+														allowedSenders[i][17] = navRts;
+														allowedSenders[i][23] = allowedSenders[u][0];
+														needNav = true;
+													}
+												}												
+											}
+											else
+											{
+												othersTransmit = true;
+											}
+										}
+										else
+										{
+											othersTransmit = true;
+										}
+									}
+									else if (allowedSenders[u][8] == 10)
+									{
+										othersTransmit = true;
+									}									
+								}
+							}
+							
+							//Return to backoff state since there are remaining BO slots, and
+							//the medium is free
+							if (needNav == true)
+							{}
+							else
+							{
+								if (othersTransmit == false)
+								{
+									allowedSenders[i][8] = 2;
+								}
+								
+								//if medium is sensed to be busy
+								else if (othersTransmit == true)
+								{
+									allowedSenders[i][8] = 1;
+								}	
+							}
+						}			
+						
+						//if medium was checked to be busy during the DIFS interval
+						else if (allowedSenders[i][11] == true)
+						{
+							//Random BOs not selected yet
+							if (allowedSenders[i][13] == false)
+							{
+								var collisionTimes;
+								var cWindow = protocol[6] + 1;
+								if (allowedSenders[i][15] == 0 || allowedSenders[i][15] == 1)
+								{
+									cWindow = protocol[6];
+								}
+								else
+								{
+									collisionTimes = allowedSenders[i][15] - 1;
+									for (n = 1; n <= collisionTimes; n++)
+									{
+										cWindow = cWindow * 2;
+									}
+									cWindow = cWindow - 1;
+								}
+								
+								if (cWindow > (protocol[7] + 1))
+								{
+									cWindow = protocol[7];
+								}												
+								var randomNum = Math.floor(Math.random()*cWindow);
+								if(testCase == "2b")
+								{
+									allowedSenders[i][9] = 8;
+								}
+								else if (testCase == "2c")
+								{
+									allowedSenders[0][9] = 5;
+									allowedSenders[1][9] = 6;
+								}
+								else if (testCase == "2d")
+								{
+									allowedSenders[1][9] = 4;
+									allowedSenders[2][9] = 4;
+								}
+								else if(testCase == "4b")
+								{
+									allowedSenders[i][9] = 5;
+								}
+								else if (testCase == "4c" && allowedSenders[1][23] == 1 && i == 1)
+								{
+									allowedSenders[1][9] = 1;
+									allowedSenders[1][23] = 2;
+								}
+								else if (testCase == "4c" && allowedSenders[1][23] == 2 && i == 1)
+								{
+									allowedSenders[1][9] = 7;
+									allowedSenders[1][23] = 3;
+								}
+								else if (testCase == "4c" && allowedSenders[2][23] == 1 && i == 2)
+								{
+									allowedSenders[2][9] = 20;
+									allowedSenders[2][23] = 2;
+								}
+								else if (testCase == "4c" && allowedSenders[0][23] == 1 && i == 0)
+								{
+									allowedSenders[0][9] = 11;
+									allowedSenders[0][23] = 2;
+								}
+								else if (testCase == "4d" && allowedSenders[0][23] == 1 && i == 0)
+								{
+									allowedSenders[0][9] = 11;
+									allowedSenders[0][23] = 2;					
+								}
+								else if (testCase == "4d" && allowedSenders[1][23] == 1 && i == 1)
+								{
+									allowedSenders[1][9] = 6;
+									allowedSenders[1][23] = 2;					
+								}	
+								else
+								{
+									allowedSenders[i][9] = randomNum;
+								}
+								allowedSenders[i][13] = true;
+								document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[i][0] + " randomly selects " + allowedSenders[i][9] + " backoff timeslots." + "\n";
+							}
+							
+							var othersTransmit1 = false;
+							var needNav = false;
+							for (u = 0; u < allowedSenders.length; u++)
+							{
+								if (allowedSenders[i][0] != allowedSenders[u][0])
+								{
+									if (allowedSenders[u][8] == 3)
+									{
+										othersTransmit1 = true;
+									}
+									else if (allowedSenders[u][8] == 5 && allowedSenders[u][10] == false)
+									{
+										othersTransmit1 = true;
+									}
+									
+									else if (allowedSenders[u][8] == 9)
+									{
+										if (protocolIdentity == "fourWay")
+										{
+											if (Math.pow((allowedSenders[i][2] - allowedSenders[u][2]), 2) + Math.pow((allowedSenders[i][3] - allowedSenders[u][3]), 2) <= Math.pow((allowedSenders[u][4]), 2))
+											{
+												if (allowedSenders[u][12] == 0)
+												{
+													var dataLength = Math.floor((allowedSenders[u][6] * 8)/protocol[1]) + 16;
+													var navRts = 40 + protocol[4] + 40 + protocol[4] + dataLength + protocol[4] + 30;
+												
+													allowedSenders[i][8] = 11;
+													if (allowedSenders[i][17] <= navRts)
+													{
+														allowedSenders[i][12] = 0;
+														allowedSenders[i][17] = navRts;
+														allowedSenders[i][23] = allowedSenders[u][0];
+														needNav = true;
+													}
+												}												
+											}
+											else
+											{
+												othersTransmit1 = true;
+											}
+										}
+										else
+										{
+											othersTransmit1 = true;
+										}
+									}
+									else if (allowedSenders[u][8] == 10)
+									{
+										var rIndex;
+						
+										for (a = 0; a < allowedReceivers.length; a++)
+										{
+											if (allowedReceivers[a][0] == allowedSenders[u][1])
+											{
+												//indicate that the receiver is transmitting something
+												allowedReceivers[a][8] = 1;	
+												rIndex = a;
+											}
+										}
+										
+										if (protocolIdentity == "fourWay")
+										{
+											var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+											var navCts = 40 + protocol[4] + dataLength + protocol[4] + 30;
+														
+											if (Math.pow((allowedSenders[i][2] - allowedReceivers[rIndex][1]), 2) + Math.pow((allowedSenders[i][3] - allowedReceivers[rIndex][2]), 2) <= Math.pow((allowedReceivers[rIndex][3]), 2))
+											{
+												if (allowedSenders[u][12] == 0)
+												{
+													allowedSenders[i][8] = 12;
+													//A transmitter may have more than 1 state
+													//this is to set the second state
+													allowedSenders[i][21] = 0;
+													allowedSenders[i][20] = 12;
+													allowedSenders[i][24] = allowedSenders[j][1];
+													allowedSenders[i][18] = navCts;
+												}
+											}
+											else
+											{
+												othersTransmit1 = true;
+											}
+										}
+										else
+										{
+											othersTransmit1 = true;
+										}
+									}									
+								}
+							}
+							
+							//When a random number of backoff slots has been selected
+							//and the number equals to zero	
+							if (allowedSenders[i][13] == true && allowedSenders[i][9] == 0)
+							{
+								//if 2-way handshake is selected, data can be sent immediately
+								if (protocolIdentity == "twoWay")
+								{
+									allowedSenders[i][8] = 3;
+									var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+									allowedSenders[i][9] = dataLength;
+								}
+								else
+								{
+									allowedSenders[i][8] = 9;
+								}
+								allowedSenders[i][13] = false;
+								mediumBusy = true;
+								allowedSenders[i][11] = false;
+							}
+							
+							else if (needNav == true)
+							{}
+							else
+							{
+							//Execute random BO timeslot if medium is not sensed to be busy
+								if (othersTransmit1 == false)
+								{
+									allowedSenders[i][8] = 2;
+								}
+								
+								//if medium is sensed to be busy
+								else if (othersTransmit1 == true)
+								{
+									allowedSenders[i][8] = 1;	
+								}
+							}
+						}
+					}
+					else
+					{
+						allowedSenders[i][12]++;
+					}
+				}
+
+				//Executing backoff timeslots
+				else if (allowedSenders[i][8] == 2)
+				{ 
+					//check if medium is busy, if busy, pause backoff slot
+					var othersBusy = false;
+					for (j = 0; j < allowedSenders.length; j++)
+					{
+						if (allowedSenders[i][0] != allowedSenders[j][0])
+						{
+							if (allowedSenders[j][8] == 3)
+							{
+								othersBusy = true;
+							}
+							else if (allowedSenders[j][8] == 5 && allowedSenders[j][10] == false)
+							{	
+								othersBusy = true;
+							}
+							else if (allowedSenders[j][8] == 9)
+							{
+								//To ensure that the transmitter will not go into busy first, directly go into navCts
+								if (allowedSenders[j][12] == 0)
+								{
+									var dataLength = Math.floor((allowedSenders[j][6] * 8)/protocol[1]) + 16;
+									var navRts = 40 + protocol[4] + 40 + protocol[4] + dataLength + protocol[4] + 30;
+						
+									if (Math.pow((allowedSenders[i][2] - allowedSenders[j][2]), 2) + Math.pow((allowedSenders[i][3] - allowedSenders[j][3]), 2) <= Math.pow((allowedSenders[j][4]), 2))
+									{
+										allowedSenders[i][8] = 11;
+										if (allowedSenders[i][17] <= navRts)
+										{
+											allowedSenders[i][12] = 0;
+											allowedSenders[i][17] = navRts;
+											allowedSenders[i][23] = allowedSenders[j][0];
+										}
+									}
+									else
+									{
+										othersBusy = true;
+									}
+								}
+								else
+								{
+									othersBusy = true;
+								}
+							}
+							else if (allowedSenders[j][8] == 10)
+							{
+								var rIndex;
+					
+								for (a = 0; a < allowedReceivers.length; a++)
+								{
+									if (allowedReceivers[a][0] == allowedSenders[j][1])
+									{
+										//indicate that the receiver is transmitting something
+										allowedReceivers[a][8] = 1;	
+										rIndex = a;
+									}
+								}
+								//To ensure that the transmitter will not go into busy first, directly go into navCts
+								if (allowedSenders[j][12] == 0)
+								{
+									var dataLength = Math.floor((allowedSenders[j][6] * 8)/protocol[1]) + 16;
+									var navCts = 40 + protocol[4] + dataLength + protocol[4] + 30;
+									
+									if (Math.pow((allowedSenders[i][2] - allowedReceivers[rIndex][1]), 2) + Math.pow((allowedSenders[i][3] - allowedReceivers[rIndex][2]), 2) <= Math.pow((allowedReceivers[rIndex][3]), 2))
+									{
+										allowedSenders[i][8] = 12;
+										//A transmitter may have more than 1 state
+										//this is to set the second state
+										allowedSenders[i][21] = 0;
+										allowedSenders[i][20] = 12;
+										allowedSenders[i][24] = allowedSenders[j][1];
+										allowedSenders[i][18] = navCts;
+									}
+									else
+									{
+										othersBusy = true;
+									}
+								}
+								else
+								{
+									othersBusy = true;
+								}
+							}							
+						}
+					}
+					
+					//check that other nodes are still in the midst of executing BO (excluding BO = 0)
+					if (othersBusy == true && allowedSenders[i][9] > 0)
+					{
+						allowedSenders[i][8] = 1;
+						//make the picture_x equals to zero, since the state of the node is changed
+						allowedSenders[i][12] = 0;
+					}
+					
+					//if the medium is not busy, and BO is greater than 0
+					//Continue executing BO
+					else if (othersBusy == false && allowedSenders[i][9] > 0)
+					{
+						allowedSenders[i][12]++;
+						if (allowedSenders[i][12] == protocol[2])
+						{
+							allowedSenders[i][12] = 0;
+							allowedSenders[i][9]--;
+						}
+					}
+					
+					//Finish executing all the BO timeslots. Change state to sending data
+					else if (allowedSenders[i][9] == 0)
+					{
+						allowedSenders[i][12] = 0;
+						
+						//directly send data once no more BO for 2-way handshake
+						if (protocolIdentity == "twoWay")
+						{
+							allowedSenders[i][8] = 3;
+							var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+							allowedSenders[i][9] = dataLength;
+						}
+						
+						//enter RTS mode when 0 BO left, for 4-way handshake
+						else if (protocolIdentity == "fourWay")
+						{
+							allowedSenders[i][8] = 9;
+						}
+						
+						allowedSenders[i][13] = false;
+						allowedSenders[i][11] = false;
+						
+						//given that one of the node has changed its state to send data/RTS
+						//check if the other nodes are executing BOs. If yes, pause BO
+						for (g = 0; g < allowedSenders.length; g++)
+						{
+							if (allowedSenders[i][0] != allowedSenders[g][0])
+							{
+								//if other sender is executing backoff, 
+								//pause the backoff timeslots for the time being
+								if (allowedSenders[g][8] == 2 && allowedSenders[g][9] > 0)
+								{
+									//so that the transmitter's neighbour will directly enter NavCts/NavRts
+									//won't go into busy medium
+									if (protocolIdentity == "fourWay")
+									{
+										if (Math.pow((allowedSenders[g][2] - allowedSenders[i][2]), 2) + Math.pow((allowedSenders[g][3] - allowedSenders[i][3]), 2) <= Math.pow((allowedSenders[i][4]), 2))
+										{
+											var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+											var navRts = 40 + protocol[4] + 40 + protocol[4] + dataLength + protocol[4] + 30;
+											
+											allowedSenders[g][8] = 11;
+											if (allowedSenders[g][17] <= navRts)
+											{
+												allowedSenders[g][12] = 0;
+												allowedSenders[g][17] = navRts;
+												allowedSenders[g][23] = allowedSenders[i][0];
+											}
+										
+										}
+										else
+										{
+											allowedSenders[g][8] = 1;
+											allowedSenders[g][12] = 0;
+										}
+									}
+									else
+									{
+										allowedSenders[g][8] = 1;
+										allowedSenders[g][12] = 0;
+									}
+								}							
+							}
+						}
+					}
+				}
+
+				//In RTS mode
+				else if (allowedSenders[i][8] == 9)
+				{
+					mediumBusy = true;
+					
+					//look for neighbouring nodes, and set their NAV, at the beginning
+					if (allowedSenders[i][12] == 0)
+					{
+						document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[i][0] + " transmits RTS to " + allowedSenders[i][1] + " ." + "\n";
+						
+						var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+						var navRts = 40 + protocol[4] + 40 + protocol[4] + dataLength + protocol[4] + 30;
+						
+						//check amongst all transmitters
+						for (m = 0; m < allowedSenders.length; m++)
+						{
+							if (allowedSenders[i][0] != allowedSenders[m][0])
+							{
+								if (Math.pow((allowedSenders[m][2] - allowedSenders[i][2]), 2) + Math.pow((allowedSenders[m][3] - allowedSenders[i][3]), 2) <= Math.pow((allowedSenders[i][4]), 2))
+								{
+									//If the other transmitter is already transmitting
+									//then just let it transmit => collision
+									if (allowedSenders[m][8] == 3 || allowedSenders[m][8] == 5 || allowedSenders[m][8] == 9 || allowedSenders[m][8] == 10)
+									{}
+									else
+									{
+										if (allowedSenders[m][8] == 0)
+										{
+											allowedSenders[m][11] = true;
+										}
+										allowedSenders[m][8] = 11;
+										if (allowedSenders[m][17] <= navRts)
+										{
+											allowedSenders[m][12] = 0;
+											allowedSenders[m][17] = navRts;
+											allowedSenders[m][23] = allowedSenders[i][0];
+											document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[m][0] + " hears " + allowedSenders[i][0] + " RTS, and sets its NAV(RTS) accordingly." + "\n";
+										}
+									}
+								}
+							}
+						}
+						
+						//check amongst all OTHER receivers
+						for (a = 0; a < allowedReceivers.length; a++)
+						{
+							//ensure that the receiver is not the receiver that the sender is transmitting RTS to
+							if (allowedReceivers[a][0] != allowedSenders[i][1])
+							{
+								if (Math.pow((allowedReceivers[a][1] - allowedSenders[i][2]), 2) + Math.pow((allowedReceivers[a][2] - allowedSenders[i][3]), 2) <= Math.pow((allowedSenders[i][4]), 2))
+								{
+									if (allowedReceivers[a][8] == 1)
+									{}
+									else
+									{
+										if (allowedReceivers[a][4] <= navRts)
+										{
+											allowedReceivers[a][4] = navRts;
+											allowedReceivers[a][9] = allowedSenders[i][0];
+											allowedReceivers[a][6] = 0;
+											document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedReceivers[a][0] + " hears " + allowedSenders[i][0] + " RTS, and sets its NAV(RTS) accordingly." + "\n";
+										}
+									}
+								}
+							}
+						}
+					}
+					
+					allowedSenders[i][12]++;
+					
+					//check if the packets suffer from collision
+					//first condition for collision: when other nodes are also transmitting
+					for (r = 0; r < allowedSenders.length; r++)
+					{	
+						if (allowedSenders[i][0] != allowedSenders[r][0])
+						{
+							/*if (Math.pow((allowedSenders[r][2] - allowedSenders[i][2]), 2) + Math.pow((allowedSenders[r][3] - allowedSenders[i][3]), 2) <= Math.pow((allowedSenders[i][4]), 2))
+							{
+							}
+							else
+							{*/
+								//others transmitting data
+								if (allowedSenders[r][8] == 3)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}																
+								}
+								
+								//check if the other nodes are sending acknowledgement
+								//if sending, will result in collision
+								else if (allowedSenders[r][8] == 5 && allowedSenders[r][10] == false)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}									
+								}
+								
+								//check if other senders are waiting for an interval of DIFS
+								//if yes, got to select BO						
+								else if (allowedSenders[r][8] == 0)
+								{
+									allowedSenders[r][11] = true;
+								}
+								
+								//check if other senders are also transmitting RTS
+								else if (allowedSenders[r][8] == 9)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}									
+								}
+
+								//check if other senders are also transmitting CTS
+								else if (allowedSenders[r][8] == 10)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}									
+								}
+								
+								//if other transmitter is executing backoff, 
+								//pause the backoff timeslots for the time being, go into medium busy
+								//(not within transmission range)
+								else if (allowedSenders[r][8] == 2)
+								{
+									allowedSenders[r][8] = 1;
+									allowedSenders[r][12] = 0;
+								}	
+							//}
+						}
+					}
+					
+					//Another form of collision: when the receiver it is transmitting to
+					//has a positive NAV
+					for (c = 0; c < allowedReceivers.length; c++)
+					{
+						if (allowedSenders[i][1] == allowedReceivers[c][0])
+						{
+							if (allowedReceivers[c][4] > 0 || allowedReceivers[c][5] > 0)
+							{
+								allowedSenders[i][10] = true;
+									
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[i][16]++;
+								if (allowedSenders[i][16] == 1)
+								{
+									allowedSenders[i][15]++;
+								}	
+							}
+						}
+					}
+					
+					if (allowedSenders[i][12] == 40)
+					{
+						allowedSenders[i][8] = 4;
+						allowedSenders[i][12] = 0;
+						
+						var checkOthers = false;
+						for (z = 0; z < allowedSenders.length; z++)
+						{
+							if (allowedSenders[i][0] != allowedSenders[z][0])
+							{
+								if (allowedSenders[z][8] == 3)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 5 && allowedSenders[z][10] == false)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 9)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 10)
+								{
+									checkOthers = true;
+								}
+							}
+						}
+						if (checkOthers == false)
+						{
+							mediumBusy = false;
+						}						
+					}
+				}
+
+				//In CTS mode
+				else if (allowedSenders[i][8] == 10)
+				{
+					mediumBusy = true;
+					var rIndex;
+					
+					for (a = 0; a < allowedReceivers.length; a++)
+					{
+						if (allowedReceivers[a][0] == allowedSenders[i][1])
+						{
+							//indicate that the receiver is transmitting something
+							allowedReceivers[a][8] = 1;	
+							rIndex = a;
+						}
+					}
+					
+					//look for neighbouring nodes, and set their NAVCTS, at the beginning
+					
+					if (allowedSenders[i][12] == 0)
+					{
+						document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[i][1] + " transmits CTS to " + allowedSenders[i][0] + " ." + "\n";
+						
+						var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+						var navCts = 40 + protocol[4] + dataLength + protocol[4] + 30;
+						
+						//check amongst all transmitters
+						for (m = 0; m < allowedSenders.length; m++)
+						{
+							if (allowedSenders[i][0] != allowedSenders[m][0])
+							{
+								if (Math.pow((allowedSenders[m][2] - allowedReceivers[rIndex][1]), 2) + Math.pow((allowedSenders[m][3] - allowedReceivers[rIndex][2]), 2) <= Math.pow((allowedReceivers[rIndex][3]), 2))
+								{
+									//If the other transmitter is already transmitting
+									//then just let it transmit => collision
+									if (allowedSenders[m][8] == 3 || allowedSenders[m][8] == 5 || allowedSenders[m][8] == 9 || allowedSenders[m][8] == 10)
+									{}
+									else
+									{
+										//if the sender is not in NAVRTS, change state to NAVCTS
+										if (allowedSenders[m][8] != 11)
+										{
+											allowedSenders[m][8] = 12;
+										}
+										//A transmitter may have more than 1 state
+										//this is to set the second state
+										allowedSenders[m][21] = 0;
+										allowedSenders[m][20] = 12;
+										if (allowedSenders[m][18] <= navCts)
+										{
+											allowedSenders[m][24] = allowedSenders[i][1];
+											allowedSenders[m][18] = navCts;
+											document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[m][0] + " hears " + allowedSenders[i][1] + " CTS, and sets its NAV(CTS) accordingly." + "\n";
+										}
+									}
+								}
+							}
+						}
+						
+						//check amongst all OTHER receivers
+						for (a = 0; a < allowedReceivers.length; a++)
+						{
+							//ensure that the receiver is not the receiver that the sender is transmitting RTS to
+							if (allowedReceivers[a][0] != allowedSenders[i][1])
+							{
+								if (Math.pow((allowedReceivers[a][1] - allowedReceivers[rIndex][1]), 2) + Math.pow((allowedReceivers[a][2] - allowedReceivers[rIndex][2]), 2) <= Math.pow((allowedReceivers[rIndex][3]), 2))
+								{
+									if (allowedReceivers[a][8] == 1)
+									{}
+									else
+									{
+										if (allowedReceivers[a][5] <= navCts)
+										{
+											allowedReceivers[a][5] = navCts;
+											allowedReceivers[a][10] = allowedSenders[i][1];
+											document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedReceivers[a][0] + " hears " + allowedSenders[i][1] + " CTS, and sets its NAV(CTS) accordingly." + "\n";
+										}
+									}
+								}
+							}
+						}
+					}
+					
+					allowedSenders[i][12]++;
+					
+					//check if the packets suffer from collision
+					//first condition for collision: when other nodes are also transmitting
+					for (r = 0; r < allowedSenders.length; r++)
+					{	
+						if (allowedSenders[i][0] != allowedSenders[r][0])
+						{
+							/*if (Math.pow((allowedSenders[r][2] - allowedSenders[i][2]), 2) + Math.pow((allowedSenders[r][3] - allowedSenders[i][3]), 2) <= Math.pow((allowedSenders[i][4]), 2))
+							{
+							}
+							else
+							{*/
+								//others transmitting data
+								if (allowedSenders[r][8] == 3)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}																
+								}
+								
+								//check if the other nodes are sending acknowledgement
+								//if sending, will result in collision
+								else if (allowedSenders[r][8] == 5 && allowedSenders[r][10] == false)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}									
+								}
+								
+								//check if other senders are waiting for an interval of DIFS
+								//if yes, got to select BO						
+								else if (allowedSenders[r][8] == 0)
+								{
+									allowedSenders[r][11] = true;
+								}
+								
+								//check if other senders are also transmitting RTS
+								else if (allowedSenders[r][8] == 9)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}									
+								}
+
+								//check if other senders are also transmitting CTS
+								else if (allowedSenders[r][8] == 10)
+								{
+									allowedSenders[r][10] = true;
+									allowedSenders[i][10] = true;
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[r][16]++;
+									if (allowedSenders[r][16] == 1)
+									{
+										allowedSenders[r][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}									
+								}
+								
+								//if other transmitter is executing backoff, 
+								//pause the backoff timeslots for the time being, go into medium busy
+								//(not within transmission range)
+								else if (allowedSenders[r][8] == 2)
+								{
+									allowedSenders[r][8] = 1;
+									allowedSenders[r][12] = 0;
+								}	
+							//}
+						}
+					}			
+					
+					if (allowedSenders[i][12] == 40)
+					{
+						for (a = 0; a < allowedReceivers.length; a++)
+						{
+							if (allowedReceivers[a][0] == allowedSenders[i][1])
+							{
+								//indicate that the receiver is no longer transmitting something
+								allowedReceivers[a][8] = 0;	
+							}
+						}
+						
+						allowedSenders[i][8] = 4;
+						allowedSenders[i][12] = 0;
+						
+						var checkOthers = false;
+						for (z = 0; z < allowedSenders.length; z++)
+						{
+							if (allowedSenders[i][0] != allowedSenders[z][0])
+							{
+								if (allowedSenders[z][8] == 3)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 5 && allowedSenders[z][10] == false)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 9)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 10)
+								{
+									checkOthers = true;
+								}
+							}
+						}
+						if (checkOthers == false)
+						{
+							mediumBusy = false;
+						}						
+					}				
+				}
+
+				//In SIFS mode
+				else if (allowedSenders[i][8] == 4)
+				{
+					if (protocolIdentity == "fourWay")
+					{
+						allowedSenders[i][12]++;
+						//Collision not encountered
+						if (allowedSenders[i][10] == false)
+						{
+							if (allowedSenders[i][12] == protocol[4])
+							{
+								allowedSenders[i][12] = 0;
+								if (allowedSenders[i][22] == 1)
+								{
+									allowedSenders[i][8] = 10;	//transit to CTS state
+									allowedSenders[i][22] = 2;
+									
+									var rIndex;
+					
+									for (a = 0; a < allowedReceivers.length; a++)
+									{
+										if (allowedReceivers[a][0] == allowedSenders[i][1])
+										{
+											//indicate that the receiver is transmitting something
+											allowedReceivers[a][8] = 1;	
+											rIndex = a;
+										}
+									}
+									
+									//given that one of the node has changed its state to send data/RTS
+									//check if the other nodes are executing BOs. If yes, pause BO
+							
+									for (g = 0; g < allowedSenders.length; g++)
+									{
+										if (allowedSenders[i][0] != allowedSenders[g][0])
+										{
+											//if other sender is executing backoff, 
+											//pause the backoff timeslots for the time being
+											if (allowedSenders[g][8] == 2 && allowedSenders[g][9] > 0)
+											{
+												//so that the transmitter's neighbour will directly enter NavCts/NavRts
+												//won't go into busy medium
+												if (protocolIdentity == "fourWay")
+												{
+													var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+													var navCts = 40 + protocol[4] + dataLength + protocol[4] + 30;
+													
+													if (Math.pow((allowedSenders[g][2] - allowedReceivers[rIndex][1]), 2) + Math.pow((allowedSenders[g][3] - allowedReceivers[rIndex][2]), 2) <= Math.pow((allowedReceivers[rIndex][3]), 2))
+													{
+														allowedSenders[g][8] = 12;
+														//A transmitter may have more than 1 state
+														//this is to set the second state
+														allowedSenders[g][21] = 0;
+														allowedSenders[g][20] = 12;
+														allowedSenders[g][24] = allowedSenders[j][1];
+														allowedSenders[g][18] = navCts;
+													}
+													else
+													{
+														allowedSenders[g][8] = 1;
+														allowedSenders[g][12] = 0;
+													}
+												}
+												else
+												{
+													allowedSenders[g][8] = 1;
+													allowedSenders[g][12] = 0;
+												}
+											}							
+										}
+									}
+								}
+								else if (allowedSenders[i][22] == 2)
+								{
+									allowedSenders[i][8] = 3;	//transit to Data state
+									var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+									allowedSenders[i][9] = dataLength;									
+									allowedSenders[i][22] = 3;
+								}
+								else if (allowedSenders[i][22] == 3)
+								{
+									allowedSenders[i][8] = 5;	//transit to ACK state
+									allowedSenders[i][22] = 1;
+								}
+							}
+						}
+						
+						else if (allowedSenders[i][10] == true)
+						{
+							var timeOut = parseInt(protocol[4]) + 30;
+							//A seperate action for data collision
+							if (allowedSenders[i][22] == 1 || allowedSenders[i][22] == 2)
+							{
+								if (allowedSenders[i][12] == timeOut)
+								{
+									//by setting this variable equals to true, it means that the transmitter 
+									//will restart the whole process again, after DIFS, and randomly selects BO
+									allowedSenders[i][11] = true;	
+									allowedSenders[i][8] = 0;	//transit back to DIFS and randomly select BO
+									allowedSenders[i][22] = 1;
+									allowedSenders[i][12] = 0;
+									allowedSenders[i][10] = false;
+									allowedSenders[i][16] = 0;
+								}
+							}
+							else if (allowedSenders[i][22] == 3)
+							{
+								if (allowedSenders[i][12] == protocol[4])
+								{
+									allowedSenders[i][8] = 5;
+									allowedSenders[i][12] = 0;
+									allowedSenders[i][22] = 1;
+								}
+							}
+						}
+					}
+					
+					else
+					{
+						allowedSenders[i][12]++;
+						if (allowedSenders[i][12] == protocol[4])
+						{
+							allowedSenders[i][8] = 5;
+							allowedSenders[i][12] = 0;
+						}					
+					}
+				}				
+
+				//In data transmission mode
+				else if (allowedSenders[i][8] == 3)
+				{
+					if (allowedSenders[i][12] == 0)
+					{
+						document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[i][0] + " starts sending data packet. ";
+						var printLine = false;
+						for (t = 0; t < allowedSenders.length; t++)
+						{
+							if (allowedSenders[t][8] == 2 && allowedSenders[t][0] != allowedSenders[i][0])
+							{
+								document.getElementById('terminalText').value += allowedSenders[t][0] + ", ";
+								printLine = true;
+							}
+						}
+						if (printLine == true)
+						{
+							document.getElementById('terminalText').value += "will pause executing backoff timeslots." + "\n";
+						}
+						else if (printLine == false)
+						{
+							document.getElementById('terminalText').value += "\n";
+						}
+					}
+					for (j = 0; j < allowedSenders.length; j++)
+					{
+						if (allowedSenders[i][0] != allowedSenders[j][0])
+						{
+							//check if other senders are waiting for an interval of DIFS
+							//if yes, got to select BO						
+							if (allowedSenders[j][8] == 0)
+							{
+								allowedSenders[j][11] = true;
+							}
+													
+							//check if other senders are also sending data
+							//if yes => result in collision
+							else if (allowedSenders[j][8] == 3)
+							{
+								allowedSenders[j][10] = true;
+								allowedSenders[i][10] = true;
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[j][16]++;
+								if (allowedSenders[j][16] == 1)
+								{
+									allowedSenders[j][15]++;
+								}
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[i][16]++;
+								if (allowedSenders[i][16] == 1)
+								{
+									allowedSenders[i][15]++;
+								}																
+							}
+							
+							//check if the other nodes are sending acknowledgement
+							//if sending, will result in collision
+							else if (allowedSenders[j][8] == 5 && allowedSenders[j][10] == false)
+							{
+								allowedSenders[j][10] = true;
+								allowedSenders[i][10] = true;
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[j][16]++;
+								if (allowedSenders[j][16] == 1)
+								{
+									allowedSenders[j][15]++;
+								}
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[i][16]++;
+								if (allowedSenders[i][16] == 1)
+								{
+									allowedSenders[i][15]++;
+								}									
+							}
+
+							//check if the other nodes are sending RTS
+							//if sending, will result in collision
+							else if (allowedSenders[j][8] == 9)
+							{
+								allowedSenders[j][10] = true;
+								allowedSenders[i][10] = true;
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[j][16]++;
+								if (allowedSenders[j][16] == 1)
+								{
+									allowedSenders[j][15]++;
+								}
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[i][16]++;
+								if (allowedSenders[i][16] == 1)
+								{
+									allowedSenders[i][15]++;
+								}									
+							}
+							
+							//check if the other nodes are sending CTS
+							//if sending, will result in collision
+							else if (allowedSenders[j][8] == 10)
+							{
+								allowedSenders[j][10] = true;
+								allowedSenders[i][10] = true;
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[j][16]++;
+								if (allowedSenders[j][16] == 1)
+								{
+									allowedSenders[j][15]++;
+								}
+								
+								//Ensure that the contention window counter is doubled correctly
+								allowedSenders[i][16]++;
+								if (allowedSenders[i][16] == 1)
+								{
+									allowedSenders[i][15]++;
+								}									
+							}							
+							
+							//if sender is executing backoff, 
+							//pause the backoff timeslots for the time being
+							else if (allowedSenders[j][8] == 2)
+							{
+								allowedSenders[j][8] = 1;
+								allowedSenders[j][12] = 0;
+							}							
+						}
+					}
+					mediumBusy = true;
+					allowedSenders[i][12]++;
+					if (allowedSenders[i][12] == allowedSenders[i][9])
+					{
+						allowedSenders[i][9] = 0;
+						allowedSenders[i][12] = 0;
+						allowedSenders[i][8] = 4;
+						
+						//check if other nodes are transmitting
+						//if they are not, can safely change mediumBusy to false
+						var checkOthers = false;
+						for (z = 0; z < allowedSenders.length; z++)
+						{
+							if (allowedSenders[i][0] != allowedSenders[z][0])
+							{
+								if (allowedSenders[z][8] == 3)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 5 && allowedSenders[z][10] == false)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 9)
+								{
+									checkOthers = true;
+								}
+								else if (allowedSenders[z][8] == 10)
+								{
+									checkOthers = true;
+								}
+							}
+						}
+						if (checkOthers == false)
+						{
+							mediumBusy = false;
+						}
+					}
+				}
+				
+				//In Acknowledgement mode
+				else if (allowedSenders[i][8] == 5)
+				{
+					if (allowedSenders[i][10] == false)
+					{
+						for (a = 0; a < allowedReceivers.length; a++)
+						{
+							if (allowedReceivers[a][0] == allowedSenders[i][1])
+							{
+								//indicate that the receiver is transmitting something
+								allowedReceivers[a][8] = 1;	
+							}
+						}
+						for (j = 0; j < allowedSenders.length; j++)
+						{
+							if (allowedSenders[i][0] != allowedSenders[j][0])
+							{
+								//check if other senders are waiting for an interval of DIFS
+								//if yes, got to select BO						
+								if (allowedSenders[j][8] == 0)
+								{
+									allowedSenders[j][11] = true;
+								}
+								
+								//if sender is executing backoff, pause the backoff timeslots for the time being
+								else if (allowedSenders[j][8] == 2)
+								{
+									allowedSenders[j][8] = 1;
+									allowedSenders[j][12] = 0;
+								}
+								
+								//check if other nodes are transmitting data, if yes, then collision occurs
+								else if (allowedSenders[j][8] == 3)
+								{
+									allowedSenders[j][10] = true;
+									allowedSenders[i][10] = true;
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[j][16]++;
+									if (allowedSenders[j][16] == 1)
+									{
+										allowedSenders[j][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}																		
+								}
+								
+								//Transmitting RTS
+								else if (allowedSenders[j][8] == 9)
+								{
+									allowedSenders[j][10] = true;
+									allowedSenders[i][10] = true;
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[j][16]++;
+									if (allowedSenders[j][16] == 1)
+									{
+										allowedSenders[j][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}																		
+								}
+
+								//Transmitting CTS
+								else if (allowedSenders[j][8] == 10)
+								{
+									allowedSenders[j][10] = true;
+									allowedSenders[i][10] = true;
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[j][16]++;
+									if (allowedSenders[j][16] == 1)
+									{
+										allowedSenders[j][15]++;
+									}
+									
+									//Ensure that the contention window counter is doubled correctly
+									allowedSenders[i][16]++;
+									if (allowedSenders[i][16] == 1)
+									{
+										allowedSenders[i][15]++;
+									}																		
+								}								
+							}
+						}
+					}
+					allowedSenders[i][12]++;
+					if (allowedSenders[i][10] == false && allowedSenders[i][12] < 30)
+					{
+						mediumBusy = true;
+					}
+					if (allowedSenders[i][12] == 30)
+					{							
+						for (a = 0; a < allowedReceivers.length; a++)
+						{
+							if (allowedReceivers[a][0] == allowedSenders[i][1])
+							{
+								//indicate that the receiver is no longer transmitting something
+								allowedReceivers[a][8] = 0;	
+							}
+						}
+						
+						if (allowedSenders[i][10] == false)
+						{
+							document.getElementById('terminalText').value += "At " + timeCount + ", " + allowedSenders[i][1] + " succesfully sent acknowledgement to " + allowedSenders[i][0] + " ." + "\n";
+							var delay = parseInt(timeCount) - parseInt(allowedSenders[i][5]);
+							document.getElementById('terminalDelay').value += "Relative Delay (in microseconds) for " + allowedSenders[i][0] + " = " + delay + ".\n";
+							allowedSenders[i][8] = 6;
+							allowedSenders[i][14] = true;
+							allowedSenders[i][15] = 0;
+							allowedSenders[i][16] = 0;
+							
+							//check if other nodes are transmitting
+							//if they are not, can safely change mediumBusy to false
+							var checkOthers = false;
+							for (z = 0; z < allowedSenders.length; z++)
+							{
+								if (allowedSenders[i][0] != allowedSenders[z][0])
+								{
+									if (allowedSenders[z][8] == 3)
+									{
+										checkOthers = true;
+									}
+									else if (allowedSenders[z][8] == 9)
+									{
+										checkOthers = true;
+									}
+									else if (allowedSenders[z][8] == 10)
+									{
+										checkOthers = true;
+									}									
+									else if (allowedSenders[z][8] == 5 && allowedSenders[z][10] == false)
+									{
+										checkOthers = true;
+									}
+								}
+							}
+							if (checkOthers == false)
+							{
+								mediumBusy = false;
+							}
+						}
+						
+						else if (allowedSenders[i][10] == true)
+						{
+							var collisionTimes;
+							var cWindow = protocol[6] + 1;
+							if (allowedSenders[i][15] == 0 || allowedSenders[i][15] == 1)
+							{
+								cWindow = protocol[6];
+							}
+							else
+							{
+								collisionTimes = allowedSenders[i][15] - 1;
+								for (n = 1; n <= collisionTimes; n++)
+								{
+									cWindow = cWindow * 2;
+								}
+								cWindow = cWindow - 1;
+							}
+							
+							if (cWindow > (protocol[7] + 1))
+							{
+								cWindow = protocol[7];
+							}
+							var randomNum = Math.floor(Math.random()*cWindow);
+							if(testCase == "2b")
+							{
+								allowedSenders[i][9] = 8;
+							}
+							else if (testCase == "2c")
+							{
+								allowedSenders[0][9] = 5;
+								allowedSenders[1][9] = 6;
+							}
+							else if (testCase == "2d")
+							{
+								allowedSenders[1][9] = 17;
+								allowedSenders[2][9] = 20;								
+							}
+							else
+							{
+								allowedSenders[i][9] = randomNum;
+							}							
+							document.getElementById('terminalText').value += "At " + timeCount + ", acknowledgement timer timeout. No acknowledgement received from " + allowedSenders[i][1] + ". " + allowedSenders[i][0] + " randomly selects " + allowedSenders[i][9] + " backoff timeslots." + ".\n";
+							allowedSenders[i][13] = true;
+							
+							//directly resend packet if 0 BO slot is selected
+							if (allowedSenders[i][9] == 0)
+							{
+								//Have to send RTS first
+								if (protocolIdentity == "fourWay")
+								{
+									allowedSenders[i][8] = 9;
+								}
+								else if (protocolIdentity == "twoWay")
+								{
+									allowedSenders[i][8] = 3;
+									var dataLength = Math.floor((allowedSenders[i][6] * 8)/protocol[1]) + 16;
+									allowedSenders[i][9] = dataLength;
+								}
+								allowedSenders[i][13] = false;
+								mediumBusy = true;							
+							}
+							else if (mediumBusy == false)
+							{
+								allowedSenders[i][8] = 2;
+							}
+							else if (mediumBusy == true)
+							{
+								allowedSenders[i][8] = 1;
+							}
+							allowedSenders[i][10] = false;
+							allowedSenders[i][16] = 0;
+						}
+						allowedSenders[i][12] = 0;
+					}
+				}							
+								
+				else if (allowedSenders[i][8] == 6)
+				{
+					canEnd++;
+				}
+			}
+		
+			for (y = 0; y < allowedReceivers.length; y++)
+			{
+				if (allowedReceivers[y][4] > 0)
+				{
+					allowedReceivers[y][4]--;
+					allowedReceivers[y][6]++;
+					if (allowedReceivers[y][4] == 0)
+					{
+						allowedReceivers[y][6] = 0;
+					}
+				}
+				
+				if (allowedReceivers[y][5] > 0)
+				{
+					allowedReceivers[y][5]--;
+					allowedReceivers[y][7]++;
+					if (allowedReceivers[y][5] == 0)
+					{
+						allowedReceivers[y][7] = 0;
+					}					
+				}				
+				
+				if (y == allowedReceivers.length - 1)
+				{
+					tt = setInterval(function(){drawTimelines(protocol, protocolIdentity, testCase)}, 1);
+				}			
+			}
+		}
+		
+	</script>
+</head>
+
+<body>
+	<div class="row" align = "center">
+		<div class="span11" align = "center">
+			<h4>How to Use this Site</h4>
+			<p class="text-success" style="font-family:arial;font-size:12px;margin:0; padding:0;">There are 2 components on this site. One is for the display of example scenarios. While, the other is for user to input the nodes' parameters.</p>
+			<h5>Selecting Example Scenarios: </h5>
+			<p class="text-success" style="font-family:arial;font-size:12px;margin:0; padding:0;">1. For the example scenarios, the parameters had been set. Thus, user can just select the scenario (either from the Two-Way Handshake or Four-Way Handshake Select Options), and click on the 'Show Timeline' blue button. </p>
+			<p class="text-success" style="font-family:arial;font-size:12px;margin:0; padding:0;">2. If user wish to view another example scenario, the user can click on the 'Select a New Scenario' orange button.</p>
+			<h5>User Input Nodes Parameters: </h5>
+			<p class="text-success" style="font-family:arial;font-size:12px;margin:0; padding:0;">1. Under User Inputs, user have to select the available options from 'Protocol', '802.11 Parameter', 'Number of Senders', and 'Number of Receivers' select options.</p>
+			<p class="text-success" style="font-family:arial;font-size:12px;margin:0; padding:0;">2. Upon selecting a number of senders and receivers, user is required to input each node's parameters (positive intergers) into the dynamically created tables' text fields. (For better visualisation of the coordinates, user can navigate the mouse cursor within the Nodes Diagram canvas)</p>
+			<p class="text-success" style="font-family:arial;font-size:12px;margin:0; padding:0;">3. Having input the nodes' parameters, user can click on the 'Show Timeline' blue button.</p>
+			<p class="text-success" style="font-family:arial;font-size:12px;margin:0; padding:0;">4. If user wish to reset the timelines and the nodes' parameters, user can click on the 'Reset Nodes' orange button.</p>
+			<h5>Additional Site Information:</h5>
+			<p style="color:blue; font-family:arial;font-size:12px;margin:0; padding:0;">- Upon selecting the 'Show Timeline' button, the 'Nodes Diagram' canvas will display the relative positions of all nodes.</p>
+			<p style="color:blue; font-family:arial;font-size:12px;margin:0; padding:0;">- The 'Timeline Progress' disabled text area displays the time a node enters a different state.</p>
+			<p style="color:blue; font-family:arial;font-size:12px;margin:0; padding:0;">- Below the 'Timeline Progress' text area, the site will show a table displaying all transmitters' ability to transmit data, and the associated hidden, exposed terminal problems. If the transmitter is not within the transmission range of the selected receiver, its timeline will not be drawn in the 'Time Lines' canvas.</p>
+			<p style="color:blue; font-family:arial;font-size:12px;margin:0; padding:0;">- After each transmitter has successfully received an ackowledgement packet for its transmitted data packet, the relative delay will be displayed in the 'Delay Results' text area.</p>
+			<p style="color:blue; font-family:arial;font-size:12px;margin:0; padding:0;">- The 'Time Lines' canvas will display the animations of the timelines. User can read information of the timeline through popouts, by navigating the mouse cursor around the timelines.</p>
+		</div>
+	</div>
+	<br>
+	<div class="row">
+	<div class="span8">
+		<div class="span8">
+			<h4>Example Scenarios</h4>
+			<form class="form-inline">
+			<br>
+			<div class="row">
+				<div class="span8">
+					<label class="control-label" for = "2Way">Two-Way Handshake</label>
+					<select class="span7" id="2Way" name="2Way" size = "4">
+						<option value="protocol">---- Please select ----</option>
+						<option value="2a">Basic 2-way Handshake (Without selection of backoff slots)</option>
+						<option value="2b">With selection of backoff slots, without collision</option>
+						<option value="2c">Collision occurs when both transmitters have data to transmit at the same time, on an idle medium</option>
+						<option value="2d">Collision occurs when both transmitters transmit at the same time, after their backoff slots</option>
+					</select>
+				</div>
+			</div>
+			<br>
+			<div class="row">
+				<div class="span8">
+					<label class="control-label" for = "4Way">Four-Way Handshake</label>
+					<select class="span7" id="4Way" name="4Way" size = "4">
+						<option value="params">---- Please select ----</option>
+						<option value="4a">Basic 4-way Handshake (Without selection of backoff slots)</option>
+						<option value="4b">With NAV allocation for neighbours within transmission range</option>
+						<option value="4c">Collision occurs when the transmitter transmits RTS to a NAV receiver</option>
+						<option value="4d">Collision occurs when both transmitters transmit RTS at the same time</option>
+					</select>
+				</div>
+			</div>
+			<br>
+			<div class="row">
+				<div id="dynamic1" class="span7"></div>
+			</div>
+			<br>
+				<button class="btn btn-primary btn-medium" id = "submitScenario" type="button" onclick = "this.disabled=true; getContent1(document.getElementById('2Way').value, document.getElementById('4Way').value)">Show Timeline</button>
+				<button class="btn btn-warning btn-medium" type="button" onclick = "clear_canvas()">Select a New Scenario</button>			
+			</form>
+		</div>
+		
+		<div class="span8">
+			<h4>User Inputs</h4>
+			<form class="form-inline">
+				<br>
+				<div class="row">
+					<div class="span3">
+						<label class="control-label" for = "protocolIdentity">Protocol</label>
+						<select class="span3" id="protocolIdentity" name="protocolIdentity" size = "5">
+							<option value="protocol">---- Please select ----</option>
+							<option value="twoWay">2-Way Handshaking</option>
+							<option value="fourWay">4-Way Handshaking</option>
+						</select>
+					</div>
+					
+					<div class="span3">
+						<label class="control-label" for = "protocolParams">802.11 Parameter</label>
+						<select class="span3" id="protocolParams" name="protocolParams" size = "5">
+							<option value="params">---- Please select ----</option>
+							<option value="fhss">802.11 (FHSS)</option>
+							<option value="dsss">802.11 (DSSS)</option>
+							<option value="ir">802.11 (IR)</option>
+							<option value="bMac">802.11b</option>
+							<option value="aMac">802.11a</option>
+						</select>
+					</div>
+				</div>
+				
+				<br>
+				
+				<div class="row">
+				
+					<div class="span2">
+						<label class="control-label" for = "numSenders">Number of Senders</label>
+						<select class="span2" id="numSenders" name="numSenders" size = "5" onclick = "displaySender(document.getElementById('numSenders').value, document.getElementById('numReceivers').value)">
+						<option value="senders">---- Please select ----</option>
+							<option value = 1>1</option>
+							<option value = 2>2</option>
+							<option value = 3>3</option>
+							<option value = 4>4</option>
+							<option value = 5>5</option>
+							<option value = 6>6</option>
+						</select>
+					</div>
+				
+					<div class="span2">
+						<label class="control-label" for = "numReceivers">Number of Receivers</label>
+						<select class="span2" id="numReceivers" name="numReceivers" size = "5" onclick = "displaySender(document.getElementById('numSenders').value, document.getElementById('numReceivers').value)">
+							<option value="receivers">---- Please select ----</option>
+							<option value = 1>1</option>
+							<option value = 2>2</option>
+							<option value = 3>3</option>
+							<option value = 4>4</option>
+							<option value = 5>5</option>
+							<option value = 6>6</option>
+						</select>
+					</div>
+				</div>
+				<br>
+				<div class="row">
+					<div id="dynamic" class="span7"></div>
+				</div>
+				
+				<br>
+				
+				<button class="btn btn-primary btn-medium" id = "submitUser" type="button" onclick = "this.disabled=true; getContent(document.getElementById('protocolParams').value, document.getElementById('protocolIdentity').value)">Show Timeline</button>
+				<button class="btn btn-warning btn-medium" type="button" onclick = "clear_canvas()">Reset Nodes</button>
+				
+				</form>		
+		</div>
+	</div>
+	<div class="span5" id="extension">
+		<h4>Timeline Progress</h4>
+		<textarea class="field span5" rows="12" id = "terminalText" name = "terminalText" disabled ></textarea>
+		<br>
+		<div id="resultTable" ></div>
+		<br>
+		<h4>Delay Results</h4>
+		<textarea class="field span5" rows="5" id = "terminalDelay" name = "terminalDelay" disabled ></textarea>
+	</div>
+</div>
+	
+	<div class="span10">
+		<h4>Nodes Diagram</h4>
+			<canvas id="coordinatesCanvas" width="1249" height="25"
+				style="border:1px solid #000000;">
+			</canvas>
+			<br>
+			<canvas id="nodeCanvas" width="1249" height="399"
+				style="border:1px solid #000000;">
+			</canvas>
+	 </div><!-- .span10 -->
+	<div class="span9">
+		<br>
+		<h4>Time Lines</h4>	
+		<div id ="wrapper" onmousemove="popout();"></div>
+	</div>
+	
+	<script>
+		var canvas1 = document.getElementById('drawCanvas');
+		var context1 = canvas1.getContext('2d');
+	</script>
+	
+	    <script>
+			/*$(document).mousemove(function(e) {
+			$('#wrapper').html('X:' + e.pageX + ' Y:' + e.pageY);
+			popout(e.pageX, e.pageY);
+		});*/
+		  //show a mouse's coordinates in the nodeCanvas
+		  var canvas = document.getElementById('nodeCanvas');
+		  var context = canvas.getContext('2d');
+
+		  canvas.addEventListener('mousemove', function(evt) {
+			var mousePos = getMousePos(canvas, evt);
+			var message = 'Relative position: ' + mousePos.x + ',' + mousePos.y;
+			writeMessage(document.getElementById('coordinatesCanvas'), message);
+		  }, false);
+		  
+		        function writeMessage(canvas, message) {
+        var context = canvas.getContext('2d');
+        context.clearRect(0, 0, 999, 25);
+        context.font = '18pt Calibri';
+        context.fillStyle = 'green';
+        context.fillText(message, 0, 20);
+      }
+		        function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+          x: evt.clientX - rect.left,
+          y: evt.clientY - rect.top
+        };
+      }
+	 </script>
+</body>
+</html>
