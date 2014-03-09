@@ -1594,7 +1594,8 @@
 						context1.fillStyle="#73F023";
 						context1.fillRect(xCo - 40,canvas_y,40,1);
 						context1.drawImage(imgArray[3], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);			
-						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "Sending Data"];
+						var dotText = "Transmitting data to " + allowedSenders[i][1];
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
 						dots.push(dotsComponents);						
 					}
 					
@@ -1640,7 +1641,7 @@
 									context1.fillStyle="#CC5599";
 									context1.fillRect(xCo - 40,canvas_y,40,1);
 									context1.drawImage(imgArray[4], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
-									var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "SIFS"];
+									var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "Waiting for a period of SIFS"];
 									dots.push(dotsComponents);	
 								}
 								xCo = 90 * (i + 1);
@@ -1653,7 +1654,7 @@
 								context1.fillStyle="#CC5599";
 								context1.fillRect(xCo - 40,canvas_y,40,1);
 								context1.drawImage(imgArray[4], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
-								var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "SIFS"];
+								var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "Waiting for a period of SIFS"];
 								dots.push(dotsComponents);									
 							}
 						//}
@@ -1673,7 +1674,8 @@
 							context1.fillStyle="#FF9900";
 							context1.fillRect(xCo - 40,canvas_y,40,1);
 							context1.drawImage(imgArray[5], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);
-							var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "ACK"];
+							var dotText = "Transmitting ACK to " + allowedSenders[i][0];
+							var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
 							dots.push(dotsComponents);										
 						}
 						else
@@ -1733,8 +1735,9 @@
 					{
 						context1.fillStyle="#FFD700";
 						context1.fillRect(xCo - 40,canvas_y,40,1);
-						context1.drawImage(imgArray[9], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);			
-						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "RTS"];
+						context1.drawImage(imgArray[9], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);	
+						var dotText = "Transmitting RTS to " + allowedSenders[i][1];
+						var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
 						dots.push(dotsComponents);
 					}					
 
@@ -1752,7 +1755,8 @@
 							context1.fillStyle="#FFD700";
 							context1.fillRect(xCo - 40,canvas_y,40,1);
 							context1.drawImage(imgArray[10], 0, allowedSenders[i][12], 40, 1, xCo - 40, canvas_y, 40, 1);					
-							var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", "CTS"];
+							var dotText = "Transmitting CTS to " + allowedSenders[i][0];
+							var dotsComponents = [xCo - 40, canvas_y, 1, 1, "red", dotText];
 							dots.push(dotsComponents);
 						}
 					}
@@ -1969,6 +1973,16 @@
 							else
 							{
 								allowedSenders[i][8] = 9;
+								for (u = 0; u < allowedSenders.length; u++)
+								{
+									if (allowedSenders[i][0] != allowedSenders[u][0])
+									{
+										if (allowedSenders[u][8] == 2)
+										{
+											allowedSenders[u][8] = 1;
+										}
+									}
+								}
 							}
 							allowedSenders[i][13] = false;
 							mediumBusy = true;							
@@ -2238,6 +2252,16 @@
 								else
 								{
 									allowedSenders[i][8] = 9;
+									for (u = 0; u < allowedSenders.length; u++)
+									{
+										if (allowedSenders[i][0] != allowedSenders[u][0])
+										{
+											if (allowedSenders[u][8] == 2)
+											{
+												allowedSenders[u][8] = 1;
+											}
+										}
+									}
 								}
 								allowedSenders[i][13] = false;
 								mediumBusy = true;
